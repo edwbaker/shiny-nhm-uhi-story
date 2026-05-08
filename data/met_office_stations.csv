@@ -1,0 +1,391 @@
+station_name,region,lat,lon,type
+Douglas,British Isles,54.168,-4.48,Manual
+Ronaldsway,British Isles,54.085,-4.631,Automatic
+Guernsey: Airport,Channel Islands,49.432,-2.598,Automatic
+Jersey: Airport,Channel Islands,49.208,-2.196,Automatic
+Jersey: St Helier,Channel Islands,49.2,-2.1,Manual
+Jersey: Trinity States Farm,Channel Islands,49.239,-2.093,Manual
+Albemarle,England,55.02,-1.88,Automatic
+Alice Holt Lodge,England,51.178,-0.849,Automatic
+Almondsbury,England,51.551,-2.558,Automatic
+Amersham Field Centre,England,51.664,-0.656,Manual
+Andrewsfield,England,51.896,0.452,Automatic
+Astwood Bank,England,52.248,-1.934,Automatic
+Bainbridge,England,54.308,-2.1,Automatic
+Bank Newton No 2,England,53.975,-2.132,Manual
+Bedford,England,52.227,-0.464,Automatic
+Benson,England,51.62,-1.097,Automatic
+Berry Head,England,50.399,-3.483,Automatic
+Bewcastle,England,55.065,-2.714,Manual
+Bingley No 2,England,53.811,-1.865,Automatic
+Blackpool Squires Gate,England,53.776,-3.037,Automatic
+Blencathra,England,54.619,-3.079,Automatic
+Bognor Regis,England,50.781,-0.675,Manual
+Boscombe Down,England,51.161,-1.753,Automatic
+Boulmer,England,55.421,-1.6,Automatic
+Bournemouth Kings Park,England,50.734,-1.822,Manual
+Bradford,England,53.813,-1.772,Automatic
+Bramham,England,53.869,-1.317,Automatic
+Brampton No 3,England,54.935,-2.733,Manual
+Bratton Fleming Haxton,England,51.116,-3.94,Manual
+Bridgefoot,England,54.649,-3.458,Automatic
+Bridlington Mrsc,England,54.094,-0.174,Automatic
+Brize Norton,England,51.758,-1.576,Automatic
+Broadwindsor,England,50.821,-2.789,Manual
+Brooms Barn,England,52.26,0.567,Automatic
+Bude,England,50.828,-4.545,Automatic
+Buntingford No 2,England,51.943,-0.09,Manual
+Buxton,England,53.258,-1.912,Manual
+Camborne,England,50.218,-5.327,Automatic
+Cambridge Botanic Garden,England,52.194,0.131,Manual
+Cambridge Niab,England,52.245,0.102,Automatic
+Cardinham Bodmin,England,50.502,-4.666,Automatic
+Carlisle,England,54.934,-2.962,Automatic
+Carlton-in-cleveland,England,54.428,-1.216,Manual
+Cavendish,England,52.09,0.63,Automatic
+Cawood,England,53.827,-1.147,Manual
+Charlwood,England,51.144,-0.228,Automatic
+Charsfield,England,52.162,1.281,Automatic
+Chertsey Abbey Mead P Sta,England,51.398,-0.494,Automatic
+Chillingham Barns No 2,England,55.529,-1.919,Automatic
+Chivenor,England,51.089,-4.147,Automatic
+Church Lawford,England,52.358,-1.33,Automatic
+Cippenham S Wks,England,51.506,-0.641,Automatic
+Cirencester,England,51.708,-1.994,Manual
+Coleshill,England,52.48,-1.689,Automatic
+Coningsby,England,53.094,-0.171,Automatic
+Copley,England,54.624,-1.869,Manual
+Coton-in-the-elms,England,52.737,-1.64,Automatic
+Coventry Coundon,England,52.424,-1.535,Automatic
+Cranwell,England,53.031,-0.502,Automatic
+Cromer,England,52.933,1.293,Automatic
+Crosby,England,53.497,-3.056,Automatic
+Culdrose,England,50.084,-5.256,Automatic
+Denver,England,52.583,0.348,Manual
+Donna Nook No 2,England,53.475,0.155,Automatic
+Dunkeswell Aerodrome,England,50.86,-3.239,Automatic
+Durham,England,54.768,-1.585,Automatic
+East Bergholt,England,51.959,1.025,Manual
+East Malling,England,51.287,0.45,Automatic
+Eastbourne,England,50.759,0.285,Manual
+Edenbridge,England,51.203,0.136,Manual
+Emley Moor No 2,England,53.612,-1.667,Automatic
+Exeter Airport No 2,England,50.737,-3.405,Automatic
+Faversham,England,51.297,0.88,Manual
+Felsham,England,52.172,0.833,Manual
+Frittenden,England,51.141,0.597,Automatic
+Fylingdales,England,54.359,-0.67,Automatic
+Gibraltar Point,England,53.095,0.323,Manual
+Gosport Fleetlands,England,50.836,-1.167,Automatic
+Goudhurst,England,51.077,0.461,Automatic
+Great Dun Fell No 2,England,54.683,-2.45,Automatic
+Gringley-on-the-hill,England,53.406,-0.883,Automatic
+Hartpury College,England,51.904,-2.311,Manual
+Hastings,England,50.855,0.572,Manual
+Hayling Island,England,50.785,-0.985,Manual
+Hazelrigg,England,54.014,-2.774,Manual
+Heathrow,England,51.479,-0.452,Automatic
+Hemyock,England,50.908,-3.226,Manual
+Hereford Credenhill,England,52.08,-2.801,Automatic
+Herstmonceux West End,England,50.89,0.318,Automatic
+High Beach,England,51.663,0.043,Automatic
+High Mowthorpe,England,54.105,-0.641,Automatic
+Holbeach No 2,England,52.873,0.14,Automatic
+Hollacombe,England,50.807,-4.309,Manual
+Holne Priddons Farm No 2,England,50.516,-3.841,Manual
+Houghton Hall,England,52.824,0.654,Automatic
+Hull East Park,England,53.766,-0.296,Automatic
+Huntsham,England,50.953,-3.437,Manual
+Hurn,England,50.779,-1.835,Automatic
+Ipstones Edge,England,53.055,-1.95,Manual
+Isle Of Portland,England,50.522,-2.454,Automatic
+Iver W Wks,England,51.512,-0.495,Automatic
+Keele,England,52.999,-2.269,Automatic
+Kenley Airfield,England,51.303,-0.09,Automatic
+Keswick,England,54.614,-3.155,Automatic
+Kew Gardens,England,51.481,-0.293,Automatic
+Kielder Castle,England,55.234,-2.579,Automatic
+Kingston Maurward,England,50.717,-2.397,Manual
+Lacock,England,51.431,-2.113,Manual
+Langdon Bay,England,51.133,1.345,Automatic
+Lapford,England,50.863,-3.808,Manual
+Larkhill,England,51.201,-1.804,Automatic
+Leconfield,England,53.874,-0.44,Automatic
+Leek Thorncliffe,England,53.128,-1.98,Automatic
+Leeming,England,54.297,-1.531,Automatic
+Levens Hall,England,54.259,-2.777,Automatic
+Lingwood Strumpshaw Hill,England,52.61,1.485,Manual
+Linkenholt Post Office,England,51.319,-1.478,Manual
+Liscombe,England,51.086,-3.608,Automatic
+Little Rissington,England,51.86,-1.691,Automatic
+Loftus,England,54.563,-0.862,Automatic
+London St James's Park,England,51.504,-0.129,Automatic
+Lyneham,England,51.503,-1.991,Automatic
+Malham Tarn,England,54.1,-2.162,Automatic
+Mannington Hall,England,52.844,1.181,Manual
+Manston,England,51.346,1.337,Automatic
+Marham,England,52.651,0.568,Automatic
+Market Bosworth Bosworth Park,England,52.623,-1.394,Automatic
+Marnhull,England,50.979,-2.317,Manual
+Maulds Meaburn,England,54.538,-2.581,Manual
+Merryfield,England,50.96,-2.932,Automatic
+Mickleham,England,51.26,-0.319,Manual
+Middle Wallop,England,51.149,-1.569,Automatic
+Middleton Hillside,England,53.099,-1.587,Manual
+Monks Wood,England,52.401,-0.235,Automatic
+Morecambe No 2,England,54.076,-2.858,Automatic
+Morpeth Cockle Park,England,55.212,-1.684,Automatic
+Myerscough,England,53.854,-2.765,Automatic
+Neatishead,England,52.714,1.473,Automatic
+Nettlecombe,England,51.13,-3.349,Manual
+Newport (salop),England,52.777,-2.426,Automatic
+Normanby Hall,England,53.637,-0.658,Automatic
+North Somercotes Church End,England,53.441,0.143,Manual
+North Wyke,England,50.768,-3.903,Automatic
+Northolt,England,51.548,-0.415,Automatic
+Nottingham Watnall,England,53.005,-1.25,Automatic
+Odiham,England,51.239,-0.943,Automatic
+Okehampton East Okement Farm,England,50.703,-3.976,Automatic
+Otterbourne W Wks,England,51.008,-1.334,Automatic
+Oxford,England,51.761,-1.262,Manual
+Pateley Bridge Ravens Nest,England,54.07,-1.77,Automatic
+Pennerley,England,52.59,-2.948,Automatic
+Pershore,England,52.148,-2.04,Automatic
+Pershore College,England,52.1,-2.059,Automatic
+Pitsford,England,52.301,-0.893,Manual
+Plymouth Mountbatten,England,50.354,-4.12,Automatic
+Preston Montford,England,52.724,-2.84,Manual
+Preston Cove House,England,50.637,-2.424,Manual
+Preston Moor Park,England,53.774,-2.703,Automatic
+Reading University Whiteknights,England,51.441,-0.937,Automatic
+Redesdale Camp,England,55.285,-2.278,Wind only
+Rochdale,England,53.608,-2.177,Automatic
+Ross-on-wye,England,51.911,-2.584,Automatic
+Rostherne No 2,England,53.36,-2.381,Automatic
+Rothamsted,England,51.806,-0.359,Automatic
+Ryhill,England,53.628,-1.393,Automatic
+Santon Downham,England,52.459,0.673,Automatic
+Scarborough,England,54.273,-0.421,Automatic
+Scilly: St Marys Airport,England,49.914,-6.295,Automatic
+Seavington Hurcott Farm,England,50.941,-2.86,Manual
+Shap,England,54.502,-2.683,Automatic
+Shawbury,England,52.794,-2.663,Automatic
+Sheffield,England,53.381,-1.49,Automatic
+Shirburn Model Farm,England,51.669,-0.995,Manual
+Shobdon Airfield,England,52.243,-2.885,Automatic
+Shoeburyness Landwick,England,51.554,0.829,Automatic
+Shoreham Airport,England,50.836,-0.292,Automatic
+Slapton,England,50.292,-3.651,Manual
+South Farnborough No 2,England,51.284,-0.777,Automatic
+South Newington,England,51.998,-1.405,Automatic
+Spadeadam No 2,England,55.05,-2.553,Automatic
+St Bees Head No 2,England,54.518,-3.613,Automatic
+Stonyhurst,England,53.845,-2.468,Automatic
+Stoodleigh Dryhill,England,50.961,-3.518,Manual
+Stowe,England,52.041,-1.012,Automatic
+Sutton Bonington,England,52.836,-1.25,Automatic
+Swanage,England,50.613,-1.957,Automatic
+Teddington Bushy Park,England,51.422,-0.339,Automatic
+Teignmouth,England,50.545,-3.494,Manual
+Tetford,England,53.253,-0.008,Manual
+Thornes Park,England,53.672,-1.515,Manual
+Thorney Island,England,50.814,-0.921,Automatic
+Tibenham Airfield,England,52.456,1.164,Automatic
+Topcliffe,England,54.205,-1.389,Automatic
+Treknow,England,50.646,-4.754,Manual
+Trevince,England,50.218,-5.174,Manual
+Underton,England,52.523,-2.467,Manual
+Virginstow Beaworthy,England,50.71,-4.296,Manual
+Waddington,England,53.175,-0.522,Automatic
+Wainfleet No 2,England,53.088,0.273,Automatic
+Wallingford,England,51.603,-1.112,Manual
+Wallington,England,55.154,-1.943,Manual
+Walney Island,England,54.125,-3.257,Automatic
+Warcop Range,England,54.572,-2.412,Automatic
+Wattisham,England,52.123,0.959,Automatic
+Wellesbourne,England,52.205,-1.603,Automatic
+Westonbirt,England,51.606,-2.219,Automatic
+Westonzoyland,England,51.115,-2.921,Manual
+Weybourne,England,52.949,1.124,Automatic
+Whitby,England,54.481,-0.624,Manual
+Wiggonholt,England,50.938,-0.492,Automatic
+Wight: Needles Old Battery,England,50.662,-1.582,Automatic
+Wight: Shanklin,England,50.623,-1.179,Manual
+Wight: St Catherines Point,England,50.575,-1.295,Automatic
+Wight: Ventnor Park,England,50.592,-1.212,Manual
+Winchcombe Sudeley Castle,England,51.948,-1.953,Automatic
+Winterbourne No2,England,52.456,-1.926,Automatic
+Wisley,England,51.31,-0.475,Automatic
+Wittering,England,52.611,-0.466,Automatic
+Woburn,England,52.014,-0.595,Automatic
+Writtle,England,51.733,0.431,Automatic
+Yeovilton,England,51.006,-2.641,Automatic
+Aldergrove,Northern Ireland,54.664,-6.224,Automatic
+Altnahinch Filters,Northern Ireland,55.048,-6.254,Automatic
+Armagh,Northern Ireland,54.352,-6.649,Automatic
+Ballypatrick Forest,Northern Ireland,55.181,-6.153,Automatic
+Banagher Caugh Hill,Northern Ireland,54.886,-6.965,Automatic
+Belfast Newforge,Northern Ireland,54.56,-5.94,Manual
+Castle Espie No 2,Northern Ireland,54.531,-5.689,Automatic
+Castlederg,Northern Ireland,54.707,-7.577,Automatic
+Derrylin Cornahoule,Northern Ireland,54.189,-7.561,Automatic
+Edenfel,Northern Ireland,54.594,-7.282,Manual
+Giants Causeway,Northern Ireland,55.234,-6.511,Automatic
+Glenanne No 2,Northern Ireland,54.237,-6.503,Automatic
+Helens Bay,Northern Ireland,54.669,-5.747,Automatic
+Hillsborough,Northern Ireland,54.453,-6.072,Manual
+Katesbridge,Northern Ireland,54.297,-6.11,Automatic
+Killowen,Northern Ireland,54.077,-6.183,Automatic
+Killylane,Northern Ireland,54.817,-6.004,Automatic
+Lough Fea,Northern Ireland,54.721,-6.814,Automatic
+Lough Navar Forest,Northern Ireland,54.439,-7.9,Manual
+Magherally,Northern Ireland,54.359,-6.195,Manual
+Magilligan No 2,Northern Ireland,55.16,-6.948,Automatic
+Murlough,Northern Ireland,54.245,-5.831,Automatic
+Portglenone,Northern Ireland,54.865,-6.457,Automatic
+Silent Valley,Northern Ireland,54.127,-6.001,Manual
+Stormont Castle,Northern Ireland,54.603,-5.829,Automatic
+Strabane Carricklee,Northern Ireland,54.808,-7.498,Manual
+Thomastown,Northern Ireland,54.33,-7.594,Automatic
+Trassey Slievenaman,Northern Ireland,54.205,-6.005,Manual
+Aboyne No 2,Scotland,57.076,-2.839,Automatic
+Achfary,Scotland,58.311,-4.915,Manual
+Achiltibuie No2,Scotland,58.015,-5.335,Manual
+Achnagart,Scotland,57.182,-5.373,Automatic
+Altnaharra No 2,Scotland,58.288,-4.441,Automatic
+Aonach Mor,Scotland,56.822,-4.968,Automatic
+Arran: Brodick Castle,Scotland,55.592,-5.153,Manual
+Auchincruive,Scotland,55.477,-4.564,Automatic
+Auchtermuchty Rossie,Scotland,56.299,-3.201,Manual
+Aultbea No 2,Scotland,57.859,-5.632,Automatic
+Aviemore,Scotland,57.206,-3.827,Automatic
+Baintown,Scotland,56.221,-3.041,Manual
+Balmoral,Scotland,57.037,-3.219,Automatic
+Baltasound No 2,Scotland,60.749,-0.854,Automatic
+Banff Golf Club,Scotland,57.661,-2.519,Manual
+Bealach Na Ba No 2,Scotland,57.418,-5.687,Automatic
+Benmore Younger Botanic Garden,Scotland,56.028,-4.984,Manual
+Bowhill,Scotland,55.541,-2.905,Manual
+Braemar No 2,Scotland,57.011,-3.396,Automatic
+Brigton,Scotland,55.038,-4.566,Manual
+Bute: Rothesay No2,Scotland,55.825,-5.055,Manual
+Cairngorm Chairlift,Scotland,57.134,-3.667,Manual
+Cairngorm Summit,Scotland,57.116,-3.642,Automatic
+Cairnwell,Scotland,56.879,-3.42,Automatic
+Cassley,Scotland,58.168,-4.726,Automatic
+Cawdor Castle No 2,Scotland,57.525,-3.923,Manual
+Charterhall,Scotland,55.709,-2.383,Automatic
+Craibstone No 2,Scotland,57.176,-2.258,Automatic
+Culzean Castle No 2,Scotland,55.356,-4.78,Manual
+Dalwhinnie No 2,Scotland,56.94,-4.237,Automatic
+Darvel Hillview,Scotland,55.615,-4.283,Manual
+Dawyck Botanic Garden,Scotland,55.604,-3.322,Manual
+Drumalbin,Scotland,55.627,-3.735,Automatic
+Drummond Castle,Scotland,56.338,-3.876,Manual
+Drumnadrochit,Scotland,57.328,-4.485,Automatic
+Dumfries Crichton Royal No 2,Scotland,55.047,-3.588,Manual
+Dunbar,Scotland,56.005,-2.527,Manual
+Dunbarney South Hill,Scotland,56.344,-3.443,Manual
+Dundreggan Rewilding Centre,Scotland,57.191,-4.765,Automatic
+Dundrennan,Scotland,54.803,-4.007,Automatic
+Dunrobin Castle Gardens,Scotland,57.981,-3.942,Manual
+Dunstaffnage,Scotland,56.451,-5.439,Automatic
+Durris,Scotland,57.032,-2.402,Manual
+Dyce,Scotland,57.205,-2.204,Automatic
+Edinburgh Gogarbank,Scotland,55.928,-3.343,Automatic
+Edinburgh Royal Botanic Garden No 2,Scotland,55.967,-3.211,Automatic
+Eskdalemuir,Scotland,55.312,-3.205,Automatic
+Fair Isle,Scotland,59.527,-1.628,Automatic
+Faskally,Scotland,56.718,-3.768,Manual
+Fettercairn Glensaugh No 2,Scotland,56.893,-2.541,Manual
+Floors Castle,Scotland,55.603,-2.467,Manual
+Forrest Lodge Burnhead,Scotland,55.144,-4.276,Manual
+Fyvie Castle,Scotland,57.443,-2.388,Automatic
+Gartocharn Portnellan Farm,Scotland,56.048,-4.566,Manual
+Glasgow Bishopton,Scotland,55.907,-4.531,Automatic
+Grangemouth Refinery,Scotland,56.009,-3.685,Manual
+Gt Cumbrae: Millport,Scotland,55.749,-4.907,Automatic
+Harris: Quidnish,Scotland,57.78,-6.896,Automatic
+Hunterston No 3,Scotland,55.722,-4.893,Manual
+Inverbervie No 2,Scotland,56.852,-2.264,Automatic
+Islay: Port Ellen,Scotland,55.681,-6.249,Automatic
+Kinbrace Hatchery,Scotland,58.231,-3.921,Automatic
+Kinlochewe,Scotland,57.613,-5.305,Automatic
+Kinloss,Scotland,57.646,-3.562,Automatic
+Kinross,Scotland,56.214,-3.411,Manual
+Kirkwall,Scotland,58.954,-2.9,Automatic
+Lentran,Scotland,57.46,-4.372,Automatic
+Lerwick,Scotland,60.139,-1.183,Automatic
+Leuchars,Scotland,56.377,-2.861,Automatic
+Loch Glascarnoch,Scotland,57.725,-4.894,Automatic
+Logan Botanic Garden,Scotland,54.741,-4.957,Automatic
+Lossiemouth,Scotland,57.712,-3.322,Automatic
+Lyth No 2,Scotland,58.55,-3.205,Manual
+Machrihanish,Scotland,55.441,-5.696,Automatic
+Motherwell Strathclyde Park,Scotland,55.786,-4.022,Manual
+Mugdock Park,Scotland,55.973,-4.329,Manual
+Mylnefield,Scotland,56.456,-3.069,Manual
+Nunraw Abbey,Scotland,55.921,-2.651,Manual
+Orkney: Loch Of Hundland,Scotland,59.113,-3.228,Manual
+Oyne No 2,Scotland,57.321,-2.544,Manual
+Pollok Country Park,Scotland,55.826,-4.314,Manual
+Poolewe,Scotland,57.775,-5.597,Manual
+Port Henderson,Scotland,57.696,-5.776,Manual
+Portpatrick Craigenlee Croft,Scotland,54.863,-5.074,Manual
+Prestwick Gannet,Scotland,55.515,-4.583,Automatic
+Raasay: Osgaig,Scotland,57.368,-6.079,Manual
+Resallach,Scotland,58.064,-5.015,Automatic
+Salsburgh,Scotland,55.862,-3.874,Automatic
+Skye: Harlosh,Scotland,57.388,-6.519,Manual
+South Uist Range,Scotland,57.358,-7.384,Automatic
+Stornoway Airport,Scotland,58.214,-6.318,Automatic
+Strathallan Airfield,Scotland,56.326,-3.727,Automatic
+Strathy East,Scotland,58.561,-3.99,Manual
+Tain Range,Scotland,57.819,-3.965,Automatic
+Tealing,Scotland,56.525,-2.926,Manual
+Threave,Scotland,54.926,-3.948,Automatic
+Tiree,Scotland,56.5,-6.88,Automatic
+Tomintoul No 6,Scotland,57.257,-3.377,Manual
+Tulloch Bridge,Scotland,56.867,-4.707,Automatic
+Tyndrum No 3,Scotland,56.419,-4.66,Automatic
+Urquhart Northwood,Scotland,57.595,-4.373,Manual
+West Freugh,Scotland,54.859,-4.934,Automatic
+Wick Airport,Scotland,58.454,-3.088,Automatic
+Aberdaron,Wales,52.789,-4.74,Automatic
+Aberporth,Wales,52.139,-4.57,Automatic
+Alwen,Wales,53.062,-3.553,Manual
+Arthog No 3,Wales,52.718,-4.004,Manual
+Bala,Wales,52.907,-3.583,Automatic
+Betws-y-coed,Wales,53.097,-3.788,Manual
+Capel Curig No 3,Wales,53.094,-3.94,Automatic
+Cardiff Bute Park,Wales,51.488,-3.187,Automatic
+Colwyn Bay,Wales,53.291,-3.713,Manual
+Corgam,Wales,52.222,-4.079,Manual
+Dale Fort,Wales,51.702,-5.151,Manual
+Dinorwic No 2,Wales,53.142,-4.107,Manual
+Gogerddan,Wales,52.432,-4.019,Automatic
+Hawarden Airport,Wales,53.175,-2.985,Automatic
+Lake Vyrnwy No 2,Wales,52.757,-3.464,Automatic
+Libanus,Wales,51.924,-3.488,Automatic
+Llanarmon Dyffryn Ceiriog,Wales,52.886,-3.254,Manual
+Llangunllo Cefnsuran,Wales,52.332,-3.132,Manual
+Llysdinam,Wales,52.215,-3.45,Automatic
+Margam No 2,Wales,51.555,-3.72,Manual
+Milford Haven Conservancy Board,Wales,51.708,-5.052,Automatic
+Mona,Wales,53.26,-4.375,Automatic
+Nantyglo,Wales,51.785,-3.184,Automatic
+Pembrey Sands,Wales,51.714,-4.366,Automatic
+Porthmadog,Wales,52.914,-4.157,Automatic
+Prestatyn,Wales,53.341,-3.411,Manual
+Rhyl No 2,Wales,53.259,-3.508,Automatic
+Saron,Wales,52.013,-4.369,Manual
+Scolton Country Park,Wales,51.859,-4.92,Automatic
+Sennybridge No 2,Wales,52.063,-3.613,Automatic
+St Athan,Wales,51.405,-3.44,Automatic
+Swyddffynnon,Wales,52.272,-3.915,Automatic
+Tenby,Wales,51.668,-4.706,Manual
+Trawsgoed,Wales,52.344,-3.947,Automatic
+Usk No 2,Wales,51.714,-2.922,Automatic
+Valley,Wales,53.252,-4.535,Automatic
+Whitechurch,Wales,51.988,-4.678,Automatic
+Whitesands,Wales,51.895,-5.284,Manual
