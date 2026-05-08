@@ -264,7 +264,10 @@ ui <- nhm_page(
           9,
           nhm_panel(
             title = "Projected Peak Temperature by City",
-            plotly::plotlyOutput("heat_map", height = "650px")
+            shiny::div(
+              style = "height: clamp(360px, 62vh, 650px);",
+              plotly::plotlyOutput("heat_map", height = "100%")
+            )
           )
         )
       )
@@ -290,8 +293,12 @@ ui <- nhm_page(
               class = "nhm-btn",
               style = paste0(
                 "background:", cols$cyan, ";color:", cols$deep, ";",
-                "border:none;border-radius:4px;padding:10px 20px;",
-                "font-weight:700;width:100%;margin-bottom:10px;"
+                "border:none;border-radius:4px;padding:10px 14px;",
+                "font-weight:700;width:100%;margin-bottom:10px;",
+                "display:flex;align-items:center;justify-content:flex-start;",
+                "gap:8px;text-align:left;white-space:normal;",
+                "word-break:break-word;line-height:1.2;height:auto;",
+                "min-height:48px;"
               )
             ),
             shiny::actionButton(
@@ -300,8 +307,12 @@ ui <- nhm_page(
               class = "nhm-btn",
               style = paste0(
                 "background:", cols$cyan, ";color:", cols$deep, ";",
-                "border:none;border-radius:4px;padding:10px 20px;",
-                "font-weight:700;width:100%;margin-bottom:10px;"
+                "border:none;border-radius:4px;padding:10px 14px;",
+                "font-weight:700;width:100%;margin-bottom:10px;",
+                "display:flex;align-items:center;justify-content:flex-start;",
+                "gap:8px;text-align:left;white-space:normal;",
+                "word-break:break-word;line-height:1.2;height:auto;",
+                "min-height:48px;"
               )
             ),
             shiny::actionButton(
@@ -310,8 +321,12 @@ ui <- nhm_page(
               class = "nhm-btn",
               style = paste0(
                 "background:", cols$cyan, ";color:", cols$deep, ";",
-                "border:none;border-radius:4px;padding:10px 20px;",
-                "font-weight:700;width:100%;margin-bottom:10px;"
+                "border:none;border-radius:4px;padding:10px 14px;",
+                "font-weight:700;width:100%;margin-bottom:10px;",
+                "display:flex;align-items:center;justify-content:flex-start;",
+                "gap:8px;text-align:left;white-space:normal;",
+                "word-break:break-word;line-height:1.2;height:auto;",
+                "min-height:48px;"
               )
             ),
             shiny::hr(),
@@ -426,7 +441,10 @@ ui <- nhm_page(
           9,
           nhm_panel(
             title = "Map",
-            plotly::plotlyOutput("fly_map", height = "650px")
+            shiny::div(
+              style = "height: clamp(360px, 62vh, 650px);",
+              plotly::plotlyOutput("fly_map", height = "100%")
+            )
           )
         )
       )
@@ -828,7 +846,7 @@ server <- function(input, output, session) {
     )
 
     if (is_change()) {
-      do.call(nhm_world_map, c(common, list(
+      p <- do.call(nhm_world_map, c(common, list(
         marker_values  = ~temp_change,
         colour_limits  = range(heat$temp_change, na.rm = TRUE),
         ramp_colours   = c("#2166AC", "#67A9CF", "#F7F7F7",
@@ -848,7 +866,7 @@ server <- function(input, output, session) {
         )
       )))
     } else {
-      do.call(nhm_world_map, c(common, list(
+      p <- do.call(nhm_world_map, c(common, list(
         marker_values  = ~hottest_3mo_tasmax_c,
         colour_limits  = range(heat$hottest_3mo_tasmax_c, na.rm = TRUE),
         ramp_colours   = c("#2166AC", "#67A9CF", "#FDDBC7",
@@ -866,6 +884,10 @@ server <- function(input, output, session) {
         )
       )))
     }
+
+    p |>
+      plotly::layout(autosize = TRUE) |>
+      plotly::config(displayModeBar = FALSE, responsive = TRUE)
   })
 
   shiny::observeEvent(plotly::event_data("plotly_click", source = "A"), {
@@ -1258,7 +1280,9 @@ server <- function(input, output, session) {
                         center = list(lat = 20, lon = 0)
                       ),
                       margin = list(l = 0, r = 0, t = 0, b = 0)
-    )
+    ) |>
+      plotly::layout(autosize = TRUE) |>
+      plotly::config(displayModeBar = FALSE, responsive = TRUE)
   })
 
   # Helper: toggle trace visibility via plotly proxy
@@ -1280,11 +1304,13 @@ server <- function(input, output, session) {
   # Generic fly-to handler
   do_fly_to <- function(view_name, lat, lon, zoom, show_fn, hide_fns) {
     fly_view(view_name)
+    plotly::plotlyProxyInvoke(fly_proxy, "relayout", list(autosize = TRUE))
     show_fn(TRUE)
     nhm_map_flyto(session, "fly_map", lat = lat, lon = lon, zoom = zoom,
                   duration = 3500)
     later::later(function() {
       for (f in hide_fns) f(FALSE)
+      plotly::plotlyProxyInvoke(fly_proxy, "relayout", list(autosize = TRUE))
     }, delay = 3.5)
   }
 
