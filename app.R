@@ -237,6 +237,12 @@ ui <- nhm_page(
               inline   = TRUE
             ),
             shiny::hr(),
+            shiny::checkboxInput(
+              inputId = "filter_hot",
+              label   = "Only show cities ≥ 35°C",
+              value   = FALSE
+            ),
+            shiny::hr(),
             shiny::uiOutput("year_control"),
             shiny::hr(),
             shiny::tags$p(
@@ -834,6 +840,9 @@ server <- function(input, output, session) {
 
   output$heat_map <- plotly::renderPlotly({
     df <- year_data()
+    if (isTRUE(input$filter_hot) && !is_change()) {
+      df <- df[df$hottest_3mo_tasmax_c >= 35, ]
+    }
 
     common <- list(
       palette       = palette,
@@ -888,7 +897,8 @@ server <- function(input, output, session) {
     p |>
       plotly::layout(autosize = TRUE) |>
       plotly::config(displayModeBar = FALSE, responsive = TRUE)
-  })
+  }) |>
+    shiny::bindCache(input$pathway, input$year, input$mode, input$filter_hot)
 
   shiny::observeEvent(plotly::event_data("plotly_click", source = "A"), {
     click <- plotly::event_data("plotly_click", source = "A")
@@ -991,7 +1001,7 @@ server <- function(input, output, session) {
 
     avg  <- round(mean(df$hottest_3mo_tasmax_c, na.rm = TRUE), 1)
     top  <- round(max(df$hottest_3mo_tasmax_c, na.rm = TRUE), 1)
-    hot  <- sum(df$hottest_3mo_tasmax_c >= 40, na.rm = TRUE)
+    hot  <- sum(df$hottest_3mo_tasmax_c >= 35, na.rm = TRUE)
 
     shiny::tagList(
       shiny::tags$div(
@@ -1013,7 +1023,7 @@ server <- function(input, output, session) {
         )
       ),
       shiny::tags$div(
-        shiny::tags$p(class = "nhm-value-label", "CITIES \u2265 40\u00b0C"),
+        shiny::tags$p(class = "nhm-value-label", "CITIES \u2265 35\u00b0C"),
         shiny::tags$p(
           style = paste0("font-size:1.5rem;font-weight:700;color:",
                          cols$lime, ";margin:2px 0;"),
