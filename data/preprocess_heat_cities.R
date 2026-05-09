@@ -1,5 +1,5 @@
-source_path <- "D:/hot-cities/outputs_raw/city_source_annual_hottest90d_tasmax_ensemble.csv"
-local_source_path <- "data/city_source_annual_hottest90d_tasmax_ensemble.csv"
+source_path <- "D:/hot-cities/outputs_raw/c40_city_source_annual_heat_metrics_ensemble.csv"
+local_source_path <- "data/c40_city_source_annual_heat_metrics_ensemble.csv"
 output_path <- "data/heat_cities.csv"
 
 if (!file.exists(source_path)) {
