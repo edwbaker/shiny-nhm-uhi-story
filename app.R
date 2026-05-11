@@ -32,18 +32,7 @@ demo_data_dir <- function() {
 }
 
 # ── Load data ───────────────────────────────────────────────────
-heat <- read.csv(
-  demo_data_path("heat_cities.csv"),
-  stringsAsFactors = FALSE
-)
-
-if (!"scenario" %in% names(heat)) {
-  heat$scenario <- "rcp85"
-}
-
-if (!"pathway" %in% names(heat)) {
-  heat$pathway <- ifelse(grepl("^ssp", heat$scenario), "cmip6_ssp585", "cmip5_rcp85")
-}
+heat <- readRDS(file.path("data", "heat_cities.rds"))
 
 format_scenario_label <- function(x) {
   out <- tools::toTitleCase(gsub("_", " ", x))
@@ -79,9 +68,7 @@ format_pathway_label <- function(x) {
   out
 }
 
-preferred_pathways <- c(
-  "cmip5_rcp85", "cmip6_ssp585"
-)
+preferred_pathways <- c("cmip5_rcp85", "cmip6_ssp585")
 pathway_levels <- unique(heat$pathway)
 pathway_levels <- c(
   preferred_pathways[preferred_pathways %in% pathway_levels],
@@ -92,40 +79,20 @@ pathway_choices <- stats::setNames(
   vapply(pathway_levels, format_pathway_label, character(1))
 )
 
-# ── Precompute baseline (first year) change ─────────────────────
-baseline_years <- stats::aggregate(
-  year ~ pathway + city_name,
-  data = heat,
-  FUN = min
-)
-baseline <- merge(
-  baseline_years,
-  heat[, c("pathway", "city_name", "year", "hottest_3mo_tasmax_c")],
-  by = c("pathway", "city_name", "year"),
-  all.x = TRUE
-)
-baseline <- baseline[, c("pathway", "city_name", "hottest_3mo_tasmax_c")]
-names(baseline)[3] <- "baseline_temp"
-heat <- merge(heat, baseline, by = c("pathway", "city_name"), all.x = TRUE)
-heat$temp_change <- heat$hottest_3mo_tasmax_c - heat$baseline_temp
+# ── Load UK3 raw city-model annual heat metrics ───────────────
+uk3_heat <- readRDS(file.path("data", "c40_uk3_city_model_annual_heat_metrics_raw.rds"))
 
-# ── Load Met Office station data ─────────────────────────────────
-stations <- read.csv(
-  demo_data_path("met_office_stations.csv"),
-  stringsAsFactors = FALSE
-)
+uk3_city_levels <- sort(unique(uk3_heat$city_name))
+if (length(uk3_city_levels) > 3) uk3_city_levels <- uk3_city_levels[1:3]
+uk3_heat     <- uk3_heat[uk3_heat$city_name %in% uk3_city_levels, ]
+uk3_year_min <- min(uk3_heat$year, na.rm = TRUE)
+uk3_year_max <- max(uk3_heat$year, na.rm = TRUE)
+uk3_has_data <- nrow(uk3_heat) > 0
 
-# ── Load NHM sensor data ─────────────────────────────────────────
-sensors <- read.csv(
-  demo_data_path("nhm_sensors.csv"),
-  stringsAsFactors = FALSE
-)
-
-# ── Load WMO station data ─────────────────────────────────────────
-wmo_stations <- read.csv(
-  demo_data_path("wmo_stations.csv"),
-  stringsAsFactors = FALSE
-)
+# ── Load station data ───────────────────────────────────────────
+stations    <- readRDS(file.path("data", "met_office_stations.rds"))
+sensors     <- readRDS(file.path("data", "nhm_sensors.rds"))
+wmo_stations <- readRDS(file.path("data", "wmo_stations.rds"))
 
 bt_default_end <- Sys.Date()
 bt_default_start <- bt_default_end - 29
@@ -213,7 +180,101 @@ ui <- nhm_page(
   nhm_flipbook(
     id = "demo",
 
-    # ── Page 1: Heat map timeline ─────────────────────────────
+    # ── Page 1: The Initiative ────────────────────────────────
+    nhm_flipbook_page(
+      title = "The Initiative",
+      nhm_panel(
+        title = "The Initiative",
+        shiny::fluidRow(
+          shiny::column(
+            4,
+            nhm_flip_card(
+              front_title = "The Problem",
+              tag = "URBAN HEAT",
+              bg_image = "images/cards/urban-heat-problem.jpg",
+              front = shiny::tagList(
+                shiny::tags$p(class = "stat-highlight", "970 cities"),
+                shiny::tags$p(
+                  class = "stat-caption",
+                  "projected to hit 35C average summer highs by 2050"
+                )
+              ),
+              back = shiny::tagList(
+                shiny::tags$p(
+                  "As cities expand, ",
+                  shiny::tags$strong("urban heat islands"),
+                  " intensify - concrete and asphalt absorb solar energy,",
+                  " raising temperatures by up to 10C compared to",
+                  " surrounding green areas."
+                ),
+                shiny::tags$p(
+                  "This creates cascading effects on ",
+                  shiny::tags$strong("biodiversity"),
+                  ", public health, and energy consumption."
+                )
+              )
+            )
+          ),
+          shiny::column(
+            4,
+            nhm_flip_card(
+              front_title = "What We're Doing",
+              tag = "RESEARCH",
+              bg_image = "images/cards/nhm-research-pond.jpg",
+              front = shiny::tagList(
+                shiny::tags$p(class = "stat-highlight", "8 million+"),
+                shiny::tags$p(
+                  class = "stat-caption",
+                  "temperature recordings across the NHM gardens"
+                )
+              ),
+              back = shiny::tagList(
+                shiny::tags$p(
+                  "A network of ",
+                  shiny::tags$strong("24 sensors"),
+                  " placed across the Museum's gardens records",
+                  " soil and surface temperatures every 30 seconds."
+                ),
+                shiny::tags$ul(
+                  shiny::tags$li("Soil at 15 cm depth"),
+                  shiny::tags$li("Surface temperature"),
+                  shiny::tags$li("Shaded vs exposed readings")
+                )
+              )
+            )
+          ),
+          shiny::column(
+            4,
+            nhm_flip_card(
+              front_title = "From Insight to Action",
+              tag = "SOLUTIONS",
+              bg_image = "images/cards/nhm-solutions-ecologist.jpg",
+              front = shiny::tagList(
+                shiny::tags$p(class = "stat-highlight", "Species level"),
+                shiny::tags$p(
+                  class = "stat-caption",
+                  "fine-tuning strategies from plant selection to soil cover"
+                )
+              ),
+              back = shiny::tagList(
+                shiny::tags$p(
+                  "Data-driven decisions help identify which ",
+                  shiny::tags$strong("plant species"),
+                  " and ground covers are most effective at reducing",
+                  " local temperatures."
+                ),
+                shiny::tags$p(
+                  "Results inform urban greening strategies for ",
+                  shiny::tags$strong("cities worldwide"), "."
+                )
+              )
+            )
+          )
+        )
+      )
+    ),
+
+    # ── Page 2: Heat map timeline ─────────────────────────────
     nhm_flipbook_page(
       title = "Global Heat Map",
       shiny::fluidRow(
@@ -279,7 +340,64 @@ ui <- nhm_page(
       )
     ),
 
-    # ── Page 2: Fly to London ─────────────────────────────────
+    # ── Page 3: UK3 city temperature trends ───────────────────
+    nhm_flipbook_page(
+      title = "UK3 Temperatures Over Time",
+      shiny::fluidRow(
+        shiny::column(
+          3,
+          nhm_panel(
+            title = "Controls",
+            shiny::sliderInput(
+              inputId = "uk3_year_range",
+              label = "Year range",
+              min = uk3_year_min,
+              max = uk3_year_max,
+              value = c(uk3_year_min, uk3_year_max),
+              step = 1,
+              sep = ""
+            ),
+            shiny::checkboxInput(
+              inputId = "uk3_show_models",
+              label = "Show individual models",
+              value = FALSE
+            ),
+            shiny::radioButtons(
+              inputId = "uk3_trend_type",
+              label = "Trend line",
+              choices = c("None" = "none", "Smooth (GAM)" = "gam"),
+              selected = "none"
+            ),
+            shiny::hr(),
+            shiny::tags$p(class = "nhm-value-label", "CITIES"),
+            shiny::tags$p(
+              style = paste0("color:", cols$text, "; margin-top:6px;"),
+              if (length(uk3_city_levels) > 0) {
+                paste(uk3_city_levels, collapse = ", ")
+              } else {
+                "No UK3 city data available"
+              }
+            )
+          ),
+          nhm_panel(
+            title = "Summary",
+            shiny::uiOutput("uk3_summary")
+          )
+        ),
+        shiny::column(
+          9,
+          nhm_panel(
+            title = "Annual Hottest 90-Day Mean Max Temperature",
+            shiny::div(
+              style = "height: clamp(360px, 62vh, 650px);",
+              plotly::plotlyOutput("uk3_temp_timeseries", height = "100%")
+            )
+          )
+        )
+      )
+    ),
+
+    # ── Page 4: Fly to London ─────────────────────────────────
     nhm_flipbook_page(
       title = "Scales of measurement",
       shiny::fluidRow(
@@ -456,7 +574,7 @@ ui <- nhm_page(
       )
     ),
 
-    # ── Page 3: Linear distance scale ──────────────────────────
+    # ── Page 5: Linear distance scale ──────────────────────────
     nhm_flipbook_page(
       title = "Linear Scale",
       shiny::fluidRow(
@@ -563,7 +681,7 @@ ui <- nhm_page(
       )
     ),
 
-    # ── Page 4: ws-bluetooth daily heatmap ──────────────────────
+    # ── Page 6: ws-bluetooth daily heatmap ──────────────────────
     nhm_flipbook_page(
       title = "Bluetooth Daily Heatmap",
       shiny::fluidRow(
@@ -1033,7 +1151,302 @@ server <- function(input, output, session) {
     )
   })
 
-  # ── Page 4: Daily bluetooth heatmap ─────────────────────────
+  uk3_filtered <- shiny::reactive({
+    if (!uk3_has_data) {
+      return(uk3_heat[0, ])
+    }
+
+    df <- uk3_heat
+    shiny::req(input$uk3_year_range)
+
+    df <- df[
+      df$year >= input$uk3_year_range[[1]] &
+        df$year <= input$uk3_year_range[[2]],
+    ]
+    df
+  })
+
+  output$uk3_temp_timeseries <- plotly::renderPlotly({
+    if (!uk3_has_data) {
+      return(
+        plotly::plot_ly() |>
+          plotly::layout(
+            annotations = list(list(
+              x = 0.5,
+              y = 0.5,
+              xref = "paper",
+              yref = "paper",
+              text = "UK3 source file not found",
+              showarrow = FALSE,
+              font = list(color = cols$muted, size = 14)
+            )),
+            xaxis = list(visible = FALSE),
+            yaxis = list(visible = FALSE),
+            paper_bgcolor = "transparent",
+            plot_bgcolor = "transparent"
+          )
+      )
+    }
+
+    df <- uk3_filtered()
+    if (nrow(df) == 0) {
+      return(
+        plotly::plot_ly() |>
+          plotly::layout(
+            annotations = list(list(
+              x = 0.5,
+              y = 0.5,
+              xref = "paper",
+              yref = "paper",
+              text = "No records in this filter window",
+              showarrow = FALSE,
+              font = list(color = cols$muted, size = 14)
+            )),
+            xaxis = list(visible = FALSE),
+            yaxis = list(visible = FALSE),
+            paper_bgcolor = "transparent",
+            plot_bgcolor = "transparent"
+          )
+      )
+    }
+
+    mean_df <- stats::aggregate(
+      annual_hottest90d_tasmax_c ~ city_name + scenario + year,
+      data = df,
+      FUN = mean,
+      na.rm = TRUE
+    )
+
+    city_order <- uk3_city_levels[uk3_city_levels %in% unique(mean_df$city_name)]
+    city_cols <- stats::setNames(
+      c(cols$cyan, cols$lime, cols$pink)[seq_along(city_order)],
+      city_order
+    )
+
+    p <- plotly::plot_ly()
+
+    if (isTRUE(input$uk3_show_models)) {
+      for (city in city_order) {
+        city_df <- df[df$city_name == city, ]
+        p <- p |>
+          plotly::add_trace(
+            data = city_df,
+            x = ~year,
+            y = ~annual_hottest90d_tasmax_c,
+            split = ~model,
+            type = "scatter",
+            mode = "lines",
+            line = list(color = city_cols[[city]], width = 1),
+            opacity = 0.12,
+            hoverinfo = "text",
+            text = ~paste0(
+              "<b>", city_name, "</b>",
+              "<br>Scenario: ", scenario,
+              "<br>Model: ", model,
+              "<br>Year: ", year,
+              "<br>Temp: ", round(annual_hottest90d_tasmax_c, 2), "\u00b0C"
+            ),
+            showlegend = FALSE,
+            inherit = FALSE
+          )
+      }
+    }
+
+    if (input$uk3_trend_type == "gam") {
+      # Fit all city GAMs first so cross-city hover comparisons are possible
+      city_fits <- lapply(stats::setNames(city_order, city_order), function(city) {
+        cm <- mean_df[mean_df$city_name == city, ]
+        cm <- cm[order(cm$year), ]
+        fit <- mgcv::gam(annual_hottest90d_tasmax_c ~ s(year), data = cm)
+        list(
+          data   = cm,
+          fitted = as.numeric(mgcv::predict.gam(fit, newdata = cm))
+        )
+      })
+
+      for (city in city_order) {
+        cf       <- city_fits[[city]]
+        cm       <- cf$data
+        cm$trend <- cf$fitted
+        other_cities <- setdiff(city_order, city)
+
+        hover_lines <- vapply(seq_len(nrow(cm)), function(i) {
+          yr   <- cm$year[[i]]
+          temp <- cm$trend[[i]]
+          parts <- paste0("<b>", city, "</b><br>Year: ", yr,
+                          "<br>Trend: ", round(temp, 2), "\u00b0C")
+          for (other in other_cities) {
+            other_fitted <- city_fits[[other]]$fitted
+            other_years  <- city_fits[[other]]$data$year
+            diffs <- other_fitted - temp
+            idx   <- which(diff(sign(diffs)) != 0)
+            if (length(idx) > 0) {
+              x0 <- other_years[[idx[[1]]]]
+              x1 <- other_years[[idx[[1]] + 1]]
+              d0 <- diffs[[idx[[1]]]]
+              d1 <- diffs[[idx[[1]] + 1]]
+              yr_other <- x0 - d0 * (x1 - x0) / (d1 - d0)
+              diff_yr  <- round(yr_other - yr)
+              sign_str <- if (diff_yr > 0) paste0("+", diff_yr) else as.character(diff_yr)
+              parts <- paste0(parts, "<br>vs ", other, ": ", sign_str, " yrs")
+            }
+          }
+          parts
+        }, character(1))
+
+        cm$hover_text <- hover_lines
+
+        p <- p |>
+          plotly::add_trace(
+            data = cm,
+            x = ~year,
+            y = ~trend,
+            type = "scatter",
+            mode = "lines",
+            name = city,
+            line = list(color = city_cols[[city]], width = 2.5, dash = "solid"),
+            hoverinfo = "text",
+            text = ~hover_text,
+            inherit = FALSE
+          )
+      }
+    }
+
+    for (city in city_order) {
+      city_mean <- mean_df[mean_df$city_name == city, ]
+      city_mean <- city_mean[order(city_mean$year), ]
+      if (nrow(city_mean) > 0) {
+        if (isTRUE(input$uk3_trend_type != "none")) {
+          # already rendered above
+        } else {
+          p <- p |>
+            plotly::add_trace(
+              data = city_mean,
+              x = ~year,
+              y = ~annual_hottest90d_tasmax_c,
+              type = "scatter",
+              mode = "lines+markers",
+              name = city,
+              line = list(color = city_cols[[city]], width = 2.5),
+              marker = list(color = city_cols[[city]], size = 5),
+              hoverinfo = "text",
+              text = ~paste0(
+                "<b>", city_name, "</b>",
+                "<br>Scenario: ", scenario,
+                "<br>Year: ", year,
+                "<br>Mean temp: ", round(annual_hottest90d_tasmax_c, 2), "\u00b0C"
+              ),
+              inherit = FALSE
+            )
+        }
+      }
+    }
+
+    p |>
+      plotly::layout(
+        paper_bgcolor = "transparent",
+        plot_bgcolor = "transparent",
+        legend = list(orientation = "v", x = 1.02, y = 1, font = list(color = cols$text, size = 11)),
+        margin = list(l = 60, r = 150, t = 10, b = 60),
+        xaxis = list(
+          title = "Year",
+          color = cols$muted,
+          gridcolor = "rgba(255,255,255,0.08)"
+        ),
+        yaxis = list(
+          title = "Temperature (\u00b0C)",
+          color = cols$muted,
+          gridcolor = "rgba(255,255,255,0.08)"
+        )
+      ) |>
+      plotly::config(displayModeBar = FALSE, responsive = TRUE)
+  }) |>
+    shiny::bindCache(input$uk3_year_range, input$uk3_show_models, input$uk3_trend_type)
+
+  output$uk3_summary <- shiny::renderUI({
+    if (!uk3_has_data) {
+      return(shiny::tags$p(
+        style = paste0("color:", cols$muted, ";"),
+        "The UK3 source file could not be found."
+      ))
+    }
+
+    df <- uk3_filtered()
+    if (nrow(df) == 0) {
+      return(shiny::tags$p(
+        style = paste0("color:", cols$muted, ";"),
+        "No records match the current filter."
+      ))
+    }
+
+    latest_year <- max(df$year, na.rm = TRUE)
+
+    scenarios_shown <- sort(unique(df$scenario))
+    scenario_labels <- vapply(scenarios_shown, format_scenario_label, character(1))
+    scen_str <- paste(scenario_labels, collapse = " + ")
+
+    series_df <- stats::aggregate(
+      annual_hottest90d_tasmax_c ~ city_name + scenario + year,
+      data = df,
+      FUN = mean,
+      na.rm = TRUE
+    )
+    period_start <- min(series_df$year, na.rm = TRUE)
+    period_end <- max(series_df$year, na.rm = TRUE)
+    city_deltas <- vapply(split(series_df, series_df$city_name), function(city_df) {
+      city_df <- city_df[order(city_df$year), ]
+      if (nrow(city_df) < 2) {
+        return(NA_real_)
+      }
+      round(city_df$annual_hottest90d_tasmax_c[nrow(city_df)] - city_df$annual_hottest90d_tasmax_c[1], 1)
+    }, numeric(1))
+    mean_delta <- round(mean(city_deltas, na.rm = TRUE), 1)
+
+    shiny::tagList(
+      shiny::tags$div(
+        style = "margin-bottom:10px;",
+        shiny::tags$p(class = "nhm-value-label", "LATEST YEAR"),
+        shiny::tags$p(
+          style = paste0("font-size:1.3rem;font-weight:700;color:", cols$cyan, ";margin:2px 0;"),
+          latest_year
+        )
+      ),
+      shiny::tags$div(
+        style = "margin-bottom:10px;",
+        shiny::tags$p(class = "nhm-value-label", "CHANGE BY CITY"),
+        shiny::HTML(paste(
+          vapply(names(city_deltas), function(c) {
+            delta <- city_deltas[[c]]
+            delta_label <- if (is.na(delta)) "N/A" else paste0(ifelse(delta >= 0, "+", ""), delta, "\u00b0C")
+            paste0(
+              "<div style='margin-bottom:5px; color:", cols$text, ";'>",
+              "<span style='font-weight:700;'>", c, ":</span> ",
+              "<span>", delta_label, "</span>",
+              "</div>"
+            )
+          }, character(1)),
+          collapse = ""
+        ))
+      ),
+      shiny::tags$div(
+        style = "margin-bottom:10px;",
+        shiny::tags$p(class = "nhm-value-label", "MEAN CHANGE ACROSS CITIES"),
+        shiny::tags$p(
+          style = paste0("font-size:1.3rem;font-weight:700;color:", cols$lime, ";margin:2px 0;"),
+          paste0(period_start, " to ", period_end, ": ", ifelse(mean_delta >= 0, "+", ""), mean_delta, "\u00b0C")
+        )
+      ),
+      shiny::tags$div(
+        shiny::tags$p(class = "nhm-value-label", "SCENARIOS"),
+        shiny::tags$p(
+          style = paste0("color:", cols$text, ";margin:2px 0;font-size:0.9rem;"),
+          scen_str
+        )
+      )
+    )
+  })
+
+  # ── Page 6: Daily bluetooth heatmap ─────────────────────────
 
   bt_filtered <- shiny::reactive({
     ensure_bluetooth_loaded()
