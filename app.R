@@ -5,33 +5,15 @@ library(plotly)
 palette <- "default"
 cols    <- nhm_colours(palette)
 
-demo_data_path <- function(filename) {
-  candidates <- c(
-    file.path("data", filename),
-    file.path("inst", "demo-heat", "data", filename)
-  )
-  existing <- candidates[file.exists(candidates)]
-  if (length(existing) > 0) {
-    return(existing[[1]])
-  }
-
-  stop("Could not locate demo data file: ", filename, call. = FALSE)
-}
-
 demo_data_dir <- function() {
-  candidates <- c(
-    "data",
-    file.path("inst", "demo-heat", "data")
-  )
-  existing <- candidates[dir.exists(candidates)]
-  if (length(existing) > 0) {
-    return(existing[[1]])
-  }
-
-  stop("Could not locate demo data directory.", call. = FALSE)
+  file.path("data")
 }
 
-# ── Load data ───────────────────────────────────────────────────
+demo_data_path <- function(filename) {
+  file.path(demo_data_dir(), filename)
+}
+
+# ── Load core city heat data ───────────────────────────────────
 heat <- readRDS(file.path("data", "heat_cities.rds"))
 
 format_scenario_label <- function(x) {
@@ -118,21 +100,19 @@ dist_world <- round(bbox_mean_dist(wmo_stations$lat, wmo_stations$lon), 1)
 dist_uk    <- round(bbox_mean_dist(stations$lat, stations$lon), 1)
 dist_nhm   <- round(bbox_mean_dist(sensors$lat, sensors$lon) * 1000) # metres
 
-# ── Log-scale positions for distance visualisation ───────────
-log_x_min <- 15; log_x_max <- 205
-log_min <- 1; log_max <- 5.5  # log10(10m) to log10(~316km)
-log_ppd <- (log_x_max - log_x_min) / (log_max - log_min)
-log_pos <- function(m) log_x_min + (log10(m) - log_min) * log_ppd
-# Tick positions
-tk_10m   <- round(log_pos(10), 1)
-tk_100m  <- round(log_pos(100), 1)
-tk_1km   <- round(log_pos(1000), 1)
-tk_10km  <- round(log_pos(10000), 1)
-tk_100km <- round(log_pos(100000), 1)
-# Data positions
-xp_nhm   <- round(log_pos(dist_nhm), 1)
-xp_uk    <- round(log_pos(dist_uk * 1000), 1)
-xp_world <- round(log_pos(dist_world * 1000), 1)
+# ── Compact linear-scale positions for page 4 card ───────────
+card_x_min <- 15; card_x_max <- 205
+card_max_km <- max(dist_world, 1)
+card_ppk <- (card_x_max - card_x_min) / card_max_km
+cp_nhm <- round(card_x_min + (dist_nhm / 1000) * card_ppk, 1)
+cp_uk <- round(card_x_min + dist_uk * card_ppk, 1)
+cp_world <- round(card_x_min + dist_world * card_ppk, 1)
+# Tick positions and labels
+ct_0 <- card_x_min
+ct_half <- round(card_x_min + 0.5 * (card_x_max - card_x_min), 1)
+ct_end <- card_x_max
+ct_half_label <- round(card_max_km / 2)
+ct_end_label <- round(card_max_km)
 
 # ── Linear-scale positions for page 3 ───────────────────────────
 lin_x_min <- 30; lin_x_max <- 1170
@@ -482,100 +462,7 @@ ui <- nhm_page(
           ),
           nhm_panel(
             title = "Mean Distance Between Devices",
-            shiny::HTML(sprintf('
-              <svg viewBox="0 0 220 115" width="100%%"
-                   xmlns="http://www.w3.org/2000/svg"
-                   style="display:block;margin:0 auto;">
-                <!-- Scale bar line -->
-                <line x1="%s" y1="55" x2="%s" y2="55"
-                  stroke="white" stroke-width="1" opacity="0.2"/>
-                <!-- Major ticks: 10m, 10km, 100km -->
-                <line x1="%s" y1="49" x2="%s" y2="61"
-                  stroke="white" stroke-width="1" opacity="0.35"/>
-                <text x="%s" y="73" fill="white"
-                  font-family="sans-serif" font-size="8"
-                  text-anchor="middle" opacity="0.5">10 m</text>
-                <line x1="%s" y1="49" x2="%s" y2="61"
-                  stroke="white" stroke-width="1" opacity="0.35"/>
-                <text x="%s" y="73" fill="white"
-                  font-family="sans-serif" font-size="8"
-                  text-anchor="middle" opacity="0.5">10 km</text>
-                <line x1="%s" y1="49" x2="%s" y2="61"
-                  stroke="white" stroke-width="1" opacity="0.35"/>
-                <text x="%s" y="73" fill="white"
-                  font-family="sans-serif" font-size="8"
-                  text-anchor="middle" opacity="0.5">100 km</text>
-                <!-- Minor ticks: 100m, 1km -->
-                <line x1="%s" y1="51" x2="%s" y2="59"
-                  stroke="white" stroke-width="0.7" opacity="0.2"/>
-                <text x="%s" y="73" fill="white"
-                  font-family="sans-serif" font-size="7"
-                  text-anchor="middle" opacity="0.35">100 m</text>
-                <line x1="%s" y1="51" x2="%s" y2="59"
-                  stroke="white" stroke-width="0.7" opacity="0.2"/>
-                <text x="%s" y="73" fill="white"
-                  font-family="sans-serif" font-size="7"
-                  text-anchor="middle" opacity="0.35">1 km</text>
-                <!-- NHM marker -->
-                <line x1="%s" y1="34" x2="%s" y2="50"
-                  stroke="%s" stroke-width="1.5" opacity="0.5"/>
-                <circle cx="%s" cy="55" r="5"
-                  fill="%s" fill-opacity="0.85"
-                  stroke="%s" stroke-width="1.5"/>
-                <text x="%s" y="26" fill="%s"
-                  font-family="sans-serif" font-size="10"
-                  font-weight="700" text-anchor="middle">NHM</text>
-                <text x="%s" y="16" fill="%s"
-                  font-family="sans-serif" font-size="9"
-                  font-weight="600" text-anchor="middle">%s m</text>
-                <!-- Met Office marker (label below) -->
-                <line x1="%s" y1="60" x2="%s" y2="76"
-                  stroke="%s" stroke-width="1.5" opacity="0.5"/>
-                <circle cx="%s" cy="55" r="5"
-                  fill="%s" fill-opacity="0.85"
-                  stroke="%s" stroke-width="1.5"/>
-                <text x="%s" y="88" fill="%s"
-                  font-family="sans-serif" font-size="10"
-                  font-weight="700" text-anchor="middle">Met Office</text>
-                <text x="%s" y="98" fill="%s"
-                  font-family="sans-serif" font-size="9"
-                  font-weight="600" text-anchor="middle">%s km</text>
-                <!-- World marker -->
-                <line x1="%s" y1="34" x2="%s" y2="50"
-                  stroke="%s" stroke-width="1.5" opacity="0.5"/>
-                <circle cx="%s" cy="55" r="5"
-                  fill="%s" fill-opacity="0.85"
-                  stroke="%s" stroke-width="1.5"/>
-                <text x="%s" y="26" fill="%s"
-                  font-family="sans-serif" font-size="10"
-                  font-weight="700" text-anchor="end">World</text>
-                <text x="%s" y="16" fill="%s"
-                  font-family="sans-serif" font-size="9"
-                  font-weight="600" text-anchor="end">%s km</text>
-                <!-- Scale annotation -->
-                <text x="110" y="112" fill="white"
-                  font-family="sans-serif" font-size="7.5"
-                  text-anchor="middle" opacity="0.35">logarithmic scale</text>
-              </svg>',
-                                log_x_min, log_x_max,
-                                tk_10m, tk_10m, tk_10m,
-                                tk_10km, tk_10km, tk_10km,
-                                tk_100km, tk_100km, tk_100km,
-                                tk_100m, tk_100m, tk_100m,
-                                tk_1km, tk_1km, tk_1km,
-                                xp_nhm, xp_nhm, cols$lime,
-                                xp_nhm, cols$lime, cols$lime,
-                                xp_nhm, cols$lime,
-                                xp_nhm, cols$lime, dist_nhm,
-                                xp_uk, xp_uk, cols$cyan,
-                                xp_uk, cols$cyan, cols$cyan,
-                                xp_uk, cols$cyan,
-                                xp_uk, cols$cyan, dist_uk,
-                                xp_world, xp_world, cols$pink,
-                                xp_world, cols$pink, cols$pink,
-                                xp_world, cols$pink,
-                                xp_world, cols$pink, dist_world
-            ))
+            shiny::uiOutput("fly_scale")
           )
         ),
         shiny::column(
@@ -591,114 +478,7 @@ ui <- nhm_page(
       )
     ),
 
-    # ── Page 5: Linear distance scale ──────────────────────────
-    nhm_flipbook_page(
-      title = "Linear Scale",
-      shiny::fluidRow(
-        shiny::column(
-          12,
-          nhm_panel(
-            title = "Mean Distance Between Devices (linear scale)",
-            shiny::HTML(sprintf('
-              <svg viewBox="0 0 1200 160" width="100%%"
-                   xmlns="http://www.w3.org/2000/svg"
-                   style="display:block;margin:0 auto;">
-                <!-- Scale bar line -->
-                <line x1="%s" y1="75" x2="%s" y2="75"
-                  stroke="white" stroke-width="1.5" opacity="0.2"/>
-                <!-- 0 km tick -->
-                <line x1="%s" y1="67" x2="%s" y2="83"
-                  stroke="white" stroke-width="1" opacity="0.4"/>
-                <text x="%s" y="96" fill="white"
-                  font-family="sans-serif" font-size="11"
-                  text-anchor="middle" opacity="0.5">0</text>
-                <!-- 50 km tick -->
-                <line x1="%s" y1="69" x2="%s" y2="81"
-                  stroke="white" stroke-width="0.8" opacity="0.25"/>
-                <text x="%s" y="96" fill="white"
-                  font-family="sans-serif" font-size="10"
-                  text-anchor="middle" opacity="0.35">50 km</text>
-                <!-- 100 km tick -->
-                <line x1="%s" y1="67" x2="%s" y2="83"
-                  stroke="white" stroke-width="1" opacity="0.4"/>
-                <text x="%s" y="96" fill="white"
-                  font-family="sans-serif" font-size="11"
-                  text-anchor="middle" opacity="0.5">100 km</text>
-                <!-- 200 km tick -->
-                <line x1="%s" y1="67" x2="%s" y2="83"
-                  stroke="white" stroke-width="1" opacity="0.4"/>
-                <text x="%s" y="96" fill="white"
-                  font-family="sans-serif" font-size="11"
-                  text-anchor="middle" opacity="0.5">200 km</text>
-                <!-- End tick -->
-                <line x1="%s" y1="67" x2="%s" y2="83"
-                  stroke="white" stroke-width="1" opacity="0.4"/>
-                <!-- NHM marker (essentially at zero) -->
-                <line x1="%s" y1="48" x2="%s" y2="70"
-                  stroke="%s" stroke-width="2" opacity="0.6"/>
-                <circle cx="%s" cy="75" r="7"
-                  fill="%s" fill-opacity="0.85"
-                  stroke="%s" stroke-width="2"/>
-                <text x="%s" y="38" fill="%s"
-                  font-family="sans-serif" font-size="14"
-                  font-weight="700" text-anchor="start">NHM</text>
-                <text x="%s" y="24" fill="%s"
-                  font-family="sans-serif" font-size="12"
-                  font-weight="600" text-anchor="start">%s m</text>
-                <!-- Met Office marker (below line) -->
-                <line x1="%s" y1="80" x2="%s" y2="106"
-                  stroke="%s" stroke-width="2" opacity="0.6"/>
-                <circle cx="%s" cy="75" r="7"
-                  fill="%s" fill-opacity="0.85"
-                  stroke="%s" stroke-width="2"/>
-                <text x="%s" y="120" fill="%s"
-                  font-family="sans-serif" font-size="14"
-                  font-weight="700" text-anchor="middle">Met Office</text>
-                <text x="%s" y="134" fill="%s"
-                  font-family="sans-serif" font-size="12"
-                  font-weight="600" text-anchor="middle">%s km</text>
-                <!-- World marker -->
-                <line x1="%s" y1="48" x2="%s" y2="70"
-                  stroke="%s" stroke-width="2" opacity="0.6"/>
-                <circle cx="%s" cy="75" r="7"
-                  fill="%s" fill-opacity="0.85"
-                  stroke="%s" stroke-width="2"/>
-                <text x="%s" y="38" fill="%s"
-                  font-family="sans-serif" font-size="14"
-                  font-weight="700" text-anchor="end">World</text>
-                <text x="%s" y="24" fill="%s"
-                  font-family="sans-serif" font-size="12"
-                  font-weight="600" text-anchor="end">%s km</text>
-                <!-- Scale annotation -->
-                <text x="600" y="155" fill="white"
-                  font-family="sans-serif" font-size="10"
-                  text-anchor="middle" opacity="0.35">linear scale</text>
-              </svg>',
-                                lin_x_min, lin_x_max,
-                                lin_x_min, lin_x_min, lin_x_min,
-                                lt_50km, lt_50km, lt_50km,
-                                lt_100km, lt_100km, lt_100km,
-                                lt_200km, lt_200km, lt_200km,
-                                lp_end, lp_end,
-                                lp_nhm, lp_nhm, cols$lime,
-                                lp_nhm, cols$lime, cols$lime,
-                                lp_nhm, cols$lime,
-                                lp_nhm, cols$lime, dist_nhm,
-                                lp_uk, lp_uk, cols$cyan,
-                                lp_uk, cols$cyan, cols$cyan,
-                                lp_uk, cols$cyan,
-                                lp_uk, cols$cyan, dist_uk,
-                                lp_world, lp_world, cols$pink,
-                                lp_world, cols$pink, cols$pink,
-                                lp_world, cols$pink,
-                                lp_world, cols$pink, dist_world
-            ))
-          )
-        )
-      )
-    ),
-
-    # ── Page 6: ws-bluetooth daily heatmap ──────────────────────
+    # ── Page 5: ws-bluetooth daily heatmap ──────────────
     nhm_flipbook_page(
       title = "Bluetooth Daily Heatmap",
       shiny::fluidRow(
@@ -1476,7 +1256,7 @@ server <- function(input, output, session) {
     )
   })
 
-  # ── Page 6: Daily bluetooth heatmap ─────────────────────────
+  # ── Page 5: Daily bluetooth heatmap ──────────────────
 
   bt_filtered <- shiny::reactive({
     ensure_bluetooth_loaded()
@@ -1643,6 +1423,46 @@ server <- function(input, output, session) {
   fly_view <- shiny::reactiveVal("Globe")
 
   output$fly_status <- shiny::renderText({ fly_view() })
+
+  output$fly_scale <- shiny::renderUI({
+    view <- fly_view()
+    show_uk <- view %in% c("Met Office Stations", "Urban Research Station")
+    show_nhm <- identical(view, "Urban Research Station")
+
+    svg <- paste0(
+      '<svg viewBox="0 0 220 115" width="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto;">',
+      '<line x1="', card_x_min, '" y1="55" x2="', card_x_max, '" y2="55" stroke="white" stroke-width="1" opacity="0.2"/>',
+      '<line x1="', ct_0, '" y1="49" x2="', ct_0, '" y2="61" stroke="white" stroke-width="1" opacity="0.35"/>',
+      '<text x="', ct_0, '" y="73" fill="white" font-family="sans-serif" font-size="8" text-anchor="middle" opacity="0.55">0 km</text>',
+      '<line x1="', ct_half, '" y1="49" x2="', ct_half, '" y2="61" stroke="white" stroke-width="1" opacity="0.3"/>',
+      '<text x="', ct_half, '" y="73" fill="white" font-family="sans-serif" font-size="7" text-anchor="middle" opacity="0.45">', ct_half_label, ' km</text>',
+      '<line x1="', ct_end, '" y1="49" x2="', ct_end, '" y2="61" stroke="white" stroke-width="1" opacity="0.35"/>',
+      '<text x="', ct_end, '" y="73" fill="white" font-family="sans-serif" font-size="8" text-anchor="middle" opacity="0.55">', ct_end_label, ' km</text>',
+
+      if (show_nhm) paste0(
+        '<line x1="', cp_nhm, '" y1="34" x2="', cp_nhm, '" y2="50" stroke="', cols$lime, '" stroke-width="1.5" opacity="0.5"/>',
+        '<circle cx="', cp_nhm, '" cy="55" r="5" fill="', cols$lime, '" fill-opacity="0.85" stroke="', cols$lime, '" stroke-width="1.5"/>',
+        '<text x="', cp_nhm, '" y="26" fill="', cols$lime, '" font-family="sans-serif" font-size="10" font-weight="700" text-anchor="middle">NHM</text>',
+        '<text x="', cp_nhm, '" y="16" fill="', cols$lime, '" font-family="sans-serif" font-size="9" font-weight="600" text-anchor="middle">', dist_nhm, ' m</text>'
+      ) else "",
+
+      if (show_uk) paste0(
+        '<line x1="', cp_uk, '" y1="60" x2="', cp_uk, '" y2="76" stroke="', cols$cyan, '" stroke-width="1.5" opacity="0.5"/>',
+        '<circle cx="', cp_uk, '" cy="55" r="5" fill="', cols$cyan, '" fill-opacity="0.85" stroke="', cols$cyan, '" stroke-width="1.5"/>',
+        '<text x="', cp_uk, '" y="88" fill="', cols$cyan, '" font-family="sans-serif" font-size="10" font-weight="700" text-anchor="middle">Met Office</text>',
+        '<text x="', cp_uk, '" y="98" fill="', cols$cyan, '" font-family="sans-serif" font-size="9" font-weight="600" text-anchor="middle">', dist_uk, ' km</text>'
+      ) else "",
+
+      '<line x1="', cp_world, '" y1="34" x2="', cp_world, '" y2="50" stroke="', cols$pink, '" stroke-width="1.5" opacity="0.5"/>',
+      '<circle cx="', cp_world, '" cy="55" r="5" fill="', cols$pink, '" fill-opacity="0.85" stroke="', cols$pink, '" stroke-width="1.5"/>',
+      '<text x="', cp_world, '" y="26" fill="', cols$pink, '" font-family="sans-serif" font-size="10" font-weight="700" text-anchor="end">World</text>',
+      '<text x="', cp_world, '" y="16" fill="', cols$pink, '" font-family="sans-serif" font-size="9" font-weight="600" text-anchor="end">', dist_world, ' km</text>',
+      '<text x="110" y="112" fill="white" font-family="sans-serif" font-size="7.5" text-anchor="middle" opacity="0.35">linear scale</text>',
+      '</svg>'
+    )
+
+    shiny::HTML(svg)
+  })
 
   # Custom dark mapbox style — boundaries loaded by URL (async), not inline
   dark_style <- list(
