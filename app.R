@@ -306,15 +306,32 @@ ui <- nhm_page(
             shiny::hr(),
             shiny::uiOutput("year_control"),
             shiny::hr(),
-            shiny::tags$p(
-              class = "nhm-value-label", "SELECTED YEAR"
-            ),
-            shiny::tags$p(
-              style = paste0(
-                "font-size:2.5rem; font-weight:700; color:",
-                cols$cyan, "; margin:4px 0;"
+            shiny::fluidRow(
+              shiny::column(
+                6,
+                shiny::tags$p(class = "nhm-value-label", "SELECTED YEAR"),
+                shiny::tags$p(
+                  style = paste0(
+                    "font-size:2.5rem; font-weight:700; color:",
+                    cols$cyan, "; margin:4px 0;"
+                  ),
+                  shiny::textOutput("year_display", inline = TRUE)
+                )
               ),
-              shiny::textOutput("year_display", inline = TRUE)
+              shiny::column(
+                6,
+                shiny::tags$p(
+                  class = "nhm-value-label",
+                  paste0("CITIES \u2265 35\u00b0C")
+                ),
+                shiny::tags$p(
+                  style = paste0(
+                    "font-size:2.5rem; font-weight:700; color:",
+                    cols$lime, "; margin:4px 0;"
+                  ),
+                  shiny::textOutput("year_hot_cities", inline = TRUE)
+                )
+              )
             )
           ),
           nhm_panel(
@@ -948,6 +965,11 @@ server <- function(input, output, session) {
     input$year
   })
 
+  output$year_hot_cities <- renderText({
+    df <- year_data()
+    sum(df$hottest_3mo_tasmax_c >= 35, na.rm = TRUE)
+  })
+
   is_change <- reactive({ input$mode == "change" })
 
   selected_city <- shiny::reactiveVal(NULL)
@@ -958,8 +980,16 @@ server <- function(input, output, session) {
 
   output$heat_map <- plotly::renderPlotly({
     df <- year_data()
-    if (isTRUE(input$filter_hot) && !is_change()) {
-      df <- df[df$hottest_3mo_tasmax_c >= 35, ]
+    if (isTRUE(input$filter_hot)) {
+      if (is_change()) {
+        # In change mode, filter to cities whose absolute temp >= 35 for that year
+        abs_df <- pathway_heat()
+        abs_df <- abs_df[abs_df$year == input$year, ]
+        hot_cities <- abs_df$city_name[abs_df$hottest_3mo_tasmax_c >= 35]
+        df <- df[df$city_name %in% hot_cities, ]
+      } else {
+        df <- df[df$hottest_3mo_tasmax_c >= 35, ]
+      }
     }
 
     common <- list(
