@@ -1304,7 +1304,7 @@ server <- function(input, output, session) {
           yr   <- cm$year[[i]]
           temp <- cm$trend[[i]]
           parts <- paste0("<b>", city, "</b><br>Year: ", yr,
-                          "<br>Trend: ", round(temp, 2), "\u00b0C")
+                          "<br>Temp: ", round(temp, 2), "\u00b0C")
           for (other in other_cities) {
             other_fitted <- city_fits[[other]]$fitted
             other_years  <- city_fits[[other]]$data$year
