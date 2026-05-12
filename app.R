@@ -9,10 +9,6 @@ demo_data_dir <- function() {
   file.path("data")
 }
 
-demo_data_path <- function(filename) {
-  file.path(demo_data_dir(), filename)
-}
-
 # ── Load core city heat data ───────────────────────────────────
 heat <- readRDS(file.path("data", "heat_cities.rds"))
 
@@ -110,19 +106,6 @@ ct_half <- round(card_x_min + 0.5 * (card_x_max - card_x_min), 1)
 ct_end <- card_x_max
 ct_half_label <- round(card_max_km / 2)
 ct_end_label <- round(card_max_km)
-
-# ── Linear-scale positions for page 3 ───────────────────────────
-lin_x_min <- 30; lin_x_max <- 1170
-lin_max_km <- dist_world
-lin_ppk   <- (lin_x_max - lin_x_min) / lin_max_km  # px per km
-lp_nhm    <- round(lin_x_min + (dist_nhm / 1000) * lin_ppk, 1)
-lp_uk     <- round(lin_x_min + dist_uk * lin_ppk, 1)
-lp_world  <- round(lin_x_min + dist_world * lin_ppk, 1)
-# Tick positions (linear)
-lt_50km   <- round(lin_x_min + 50 * lin_ppk, 1)
-lt_100km  <- round(lin_x_min + 100 * lin_ppk, 1)
-lt_200km  <- round(lin_x_min + 200 * lin_ppk, 1)
-lp_end    <- round(lin_x_min + lin_max_km * lin_ppk, 1)
 
 # ── UI helpers ──────────────────────────────────────────────────
 # Wrap repeated scattermapbox trace construction
@@ -1220,37 +1203,6 @@ server <- function(input, output, session) {
     do_fly_to("Urban Research Station", lat = 51.4965, lon = -0.1764, zoom = 17,
               show_fn   = show_sensors,
               hide_fns  = list(show_stations, show_wmo))
-  })
-
-  # London data for info panel
-  output$london_info <- shiny::renderUI({
-    london <- pathway_heat()
-    london <- london[london$city_name == "London", ]
-    if (nrow(london) == 0) {
-      return(shiny::tags$p("London not found in dataset."))
-    }
-    years <- pathway_years()
-    now  <- london[london$year == min(years), ]
-    last <- london[london$year == max(years), ]
-    shiny::tagList(
-      shiny::tags$p(paste0(
-        "Pathway: ", format_pathway_label(selected_pathway())
-      )),
-      shiny::tags$p(paste0(
-        "Peak temp ", min(years), ": ",
-        round(now$hottest_3mo_tasmax_c, 1), "\u00b0C"
-      )),
-      shiny::tags$p(paste0(
-        "Peak temp ", max(years), ": ",
-        round(last$hottest_3mo_tasmax_c, 1), "\u00b0C"
-      )),
-      shiny::tags$p(
-        style = paste0("color:", cols$pink, ";"),
-        paste0("Change: +",
-               round(last$hottest_3mo_tasmax_c - now$hottest_3mo_tasmax_c, 1),
-               "\u00b0C")
-      )
-    )
   })
 }
 
