@@ -462,6 +462,13 @@ ui <- nhm_page(
 
 # ── Server ──────────────────────────────────────────────────────
 server <- function(input, output, session) {
+  # Pre-register plotly click event so event_data() doesn't warn before the
+  # heat_map plot is first rendered (which is deferred by bindCache).
+  session$userData$plotlyShinyEventIDs <- unique(c(
+    session$userData$plotlyShinyEventIDs,
+    "plotly_click-A"
+  ))
+
   selected_pathway <- reactive({
     shiny::req(input$pathway)
     input$pathway
@@ -512,6 +519,7 @@ server <- function(input, output, session) {
   is_change <- reactive({ input$mode == "change" })
 
   selected_city <- shiny::reactiveVal(NULL)
+  selected_city_detail <- shiny::reactiveVal(NULL)
 
   shiny::observeEvent(input$pathway, {
     selected_city(NULL)
@@ -581,38 +589,59 @@ server <- function(input, output, session) {
       )))
     }
 
-    p |>
+    p <- p |>
       plotly::layout(autosize = TRUE) |>
-      plotly::config(displayModeBar = FALSE, responsive = TRUE)
+      plotly::config(displayModeBar = FALSE, responsive = TRUE) |>
+      plotly::event_register("plotly_click")
+    p
   }) |>
     shiny::bindCache(input$pathway, input$year, input$mode, input$filter_hot)
 
-  shiny::observeEvent(plotly::event_data("plotly_click", source = "A"), {
-    click <- plotly::event_data("plotly_click", source = "A")
-    if (!is.null(click)) {
-      # Find the city name from the current year's data
-      df <- year_data()
-      idx <- click$pointNumber + 1L
-      if (idx >= 1 && idx <= nrow(df)) {
-        selected_city(df$city_name[idx])
-      }
+  get_heat_click <- function() {
+    suppressWarnings(
+      plotly::event_data("plotly_click", priority = "event")
+    )
+  }
+
+  shiny::observe({
+    click <- get_heat_click()
+    if (is.null(click)) {
+      return(invisible())
+    }
+
+    # Find the city name from the current year's data
+    df <- year_data()
+    idx <- click$pointNumber + 1L
+    if (idx >= 1 && idx <= nrow(df)) {
+      selected_city(df$city_name[idx])
+      selected_city_detail(click$customdata)
     }
   })
 
   output$city_detail <- shiny::renderUI({
-    click <- plotly::event_data("plotly_click", source = "A")
-    if (is.null(click)) {
+    detail_html <- selected_city_detail()
+    if (is.null(detail_html)) {
       return(shiny::tags$p(
         style = paste0("color:", cols$muted, ";"),
         "Click a city on the map."
       ))
     }
-    shiny::HTML(click$customdata)
+    shiny::HTML(detail_html)
   })
 
   output$city_timeseries <- plotly::renderPlotly({
     city <- selected_city()
-    if (is.null(city)) return(plotly::plotly_empty())
+    if (is.null(city)) {
+      return(
+        plotly::plot_ly(type = "scatter", mode = "markers") |>
+          plotly::layout(
+            xaxis = list(visible = FALSE),
+            yaxis = list(visible = FALSE),
+            paper_bgcolor = "transparent",
+            plot_bgcolor  = "transparent"
+          )
+      )
+    }
 
     city_df <- pathway_heat()
     city_df <- city_df[city_df$city_name == city, ]
@@ -738,7 +767,7 @@ server <- function(input, output, session) {
   output$uk3_temp_timeseries <- plotly::renderPlotly({
     if (!uk3_has_data) {
       return(
-        plotly::plot_ly() |>
+        plotly::plot_ly(type = "scatter", mode = "markers") |>
           plotly::layout(
             annotations = list(list(
               x = 0.5,
@@ -760,7 +789,7 @@ server <- function(input, output, session) {
     df <- uk3_filtered()
     if (nrow(df) == 0) {
       return(
-        plotly::plot_ly() |>
+        plotly::plot_ly(type = "scatter", mode = "markers") |>
           plotly::layout(
             annotations = list(list(
               x = 0.5,
@@ -792,7 +821,7 @@ server <- function(input, output, session) {
       city_order
     )
 
-    p <- plotly::plot_ly()
+    p <- plotly::plot_ly(type = "scatter", mode = "markers")
 
     if (isTRUE(input$uk3_show_models)) {
       for (city in city_order) {
