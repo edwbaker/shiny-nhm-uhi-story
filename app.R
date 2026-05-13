@@ -261,7 +261,7 @@ ui <- nhm_page(
             shiny::checkboxInput(
               inputId = "filter_hot",
               label   = "Only show cities ≥ 35°C",
-              value   = FALSE
+              value   = TRUE
             ),
             shiny::hr(),
             shiny::uiOutput("year_control"),
@@ -1156,53 +1156,80 @@ server <- function(input, output, session) {
   })
 
   # Helper: toggle trace visibility via plotly proxy
-  fly_proxy <- NULL
-  shiny::observe({
-    fly_proxy <<- plotly::plotlyProxy("fly_map", session)
-  })
+  fly_visibility_seq <- 0L
 
-  make_show_fn <- function(idx) {
-    function(visible) {
-      plotly::plotlyProxyInvoke(fly_proxy, "restyle",
-                                list(visible = visible), list(idx))
-    }
+  get_fly_proxy <- function() {
+    plotly::plotlyProxy("fly_map", session)
   }
-  show_stations <- make_show_fn(0L)
-  show_sensors  <- make_show_fn(1L)
-  show_wmo      <- make_show_fn(2L)
 
-  # Generic fly-to handler
-  do_fly_to <- function(view_name, lat, lon, zoom, show_fn, hide_fns) {
-    fly_view(view_name)
-    plotly::plotlyProxyInvoke(fly_proxy, "relayout", list(autosize = TRUE))
-    show_fn(TRUE)
-    nhm_map_flyto(session, "fly_map", lat = lat, lon = lon, zoom = zoom,
-                  duration = 3500)
+  set_trace_visibility <- function(target_idx, hide_delay = 0) {
+    fly_proxy <- get_fly_proxy()
+    fly_visibility_seq <<- fly_visibility_seq + 1L
+    seq_id <- fly_visibility_seq
+
+    # Show the new series first.
+    plotly::plotlyProxyInvoke(
+      fly_proxy,
+      "restyle",
+      list(visible = TRUE),
+      list(as.integer(target_idx))
+    )
+
+    # Then hide old series after the requested delay.
     later::later(function() {
-      for (f in hide_fns) f(FALSE)
-      plotly::plotlyProxyInvoke(fly_proxy, "relayout", list(autosize = TRUE))
-    }, delay = 3.5)
+      if (fly_visibility_seq != seq_id) {
+        return(invisible())
+      }
+
+      fly_proxy <- get_fly_proxy()
+      for (idx in setdiff(0:2, target_idx)) {
+        plotly::plotlyProxyInvoke(
+          fly_proxy,
+          "restyle",
+          list(visible = FALSE),
+          list(as.integer(idx))
+        )
+      }
+    }, delay = hide_delay)
+  }
+
+  # Generic map-view handler (interrupt-safe)
+  do_fly_to <- function(view_name, lat, lon, zoom, target_idx) {
+    fly_proxy <- get_fly_proxy()
+    fly_duration_s <- 1.8
+
+    fly_view(view_name)
+    # Keep previous traces visible during the fly animation, then hide them.
+    set_trace_visibility(target_idx, hide_delay = fly_duration_s)
+
+    # Keep plot responsive, then run animated fly/zoom transition.
+    plotly::plotlyProxyInvoke(fly_proxy, "relayout", list(autosize = TRUE))
+    nhm_map_flyto(
+      session,
+      "fly_map",
+      lat = lat,
+      lon = lon,
+      zoom = zoom,
+      duration = as.integer(fly_duration_s * 1000)
+    )
   }
 
   # World view
   shiny::observeEvent(input$fly_world, {
     do_fly_to("World", lat = 20, lon = 0, zoom = 1,
-              show_fn   = show_wmo,
-              hide_fns  = list(show_stations, show_sensors))
+              target_idx = 2L)
   })
 
   # UK view
   shiny::observeEvent(input$fly_uk, {
     do_fly_to("Met Office Stations", lat = 54.5, lon = -3, zoom = 4.8,
-              show_fn   = show_stations,
-              hide_fns  = list(show_sensors, show_wmo))
+              target_idx = 0L)
   })
 
   # NHM view
   shiny::observeEvent(input$fly_nhm, {
     do_fly_to("Urban Research Station", lat = 51.4965, lon = -0.1764, zoom = 17,
-              show_fn   = show_sensors,
-              hide_fns  = list(show_stations, show_wmo))
+              target_idx = 1L)
   })
 }
 
