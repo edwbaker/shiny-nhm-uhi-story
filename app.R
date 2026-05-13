@@ -590,7 +590,7 @@ server <- function(input, output, session) {
     }
 
     p <- p |>
-      plotly::layout(autosize = TRUE) |>
+      plotly::layout(autosize = TRUE, showlegend = FALSE) |>
       plotly::config(displayModeBar = FALSE, responsive = TRUE) |>
       plotly::event_register("plotly_click")
     p
