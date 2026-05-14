@@ -69,8 +69,71 @@ uk3_has_data <- nrow(uk3_heat) > 0
 
 # ── Load station data ───────────────────────────────────────────
 stations    <- readRDS(file.path("data", "met_office_stations.rds"))
-sensors     <- readRDS(file.path("data", "nhm_sensors.rds"))
 wmo_stations <- readRDS(file.path("data", "wmo_stations.rds"))
+
+# ── Soil sensor locations (DS18B20) ─────────────────────────────
+soil_locs <- list(
+  "28-00000f9d74ea" = c(51.495769, -0.177637),
+  "28-00000f9cf161" = c(51.495584, -0.178054),
+  "28-00000f9d3348" = c(),
+  "28-00000f9d0f1c" = c(51.495990, -0.178097),
+  "28-00000f9c7e6a" = c(51.495980, -0.178801),
+  "28-00000f9cf708" = c(51.496000, -0.178425),
+  "28-00000f9e7522" = c(51.495615, -0.177593),
+  "28-00000f9db933" = c(51.496100, -0.177929),
+  "28-00000fa3cd99" = c(51.495755, -0.177402),
+  "28-000010491907" = c(51.49621, -0.17819),
+  "28-00000fa3f840" = c(51.495774, -0.178360),
+  "28-00000fa44683" = c(51.495990, -0.178255),
+  "28-00000f9cc2ca" = c(51.495484, -0.178638),
+  "28-0000104906cc" = c(51.495606, -0.177782),
+  "28-00000ff8e011" = c(51.495755, -0.177037),
+  "28-00000fa659d0" = c(51.495719, -0.178035),
+  "28-00000fa45dad" = c(51.495665, -0.177136),
+  "28-00000ff81fd6" = c(51.495671, -0.178034)
+)
+valid_soil_locs <- vapply(soil_locs, length, integer(1)) == 2L
+sensors <- data.frame(
+  sensor_name = names(soil_locs)[valid_soil_locs],
+  lat = vapply(soil_locs[valid_soil_locs], `[[`, numeric(1), 1),
+  lon = vapply(soil_locs[valid_soil_locs], `[[`, numeric(1), 2)
+)
+
+concrete_path <- list(
+  "10cm from path" = "28-00000f9cf708",
+  "20cm from path" = "28-00000f9dc5e7",
+  "30cm from path" = "28-00000f9d2349"
+)
+
+
+# ── Initial map view to cover all soil sensor locations ───────────
+soil_map_center <- list(
+  lat = mean(range(sensors$lat)),
+  lon = mean(range(sensors$lon))
+)
+soil_map_zoom <- (function() {
+  lon_span   <- diff(range(sensors$lon))
+  lat_span   <- diff(range(sensors$lat))
+  lat_as_lon <- lat_span / cos(soil_map_center$lat * pi / 180)
+  max_span   <- max(lon_span, lat_as_lon)
+  floor(log2(360 / max_span)) - 1L
+})()
+
+# ── Load NHM sensor time series (DS18B20 hourly max, pre-aggregated) ────
+nhm_env <- new.env()
+load(file.path("data", "nhm_sensors.RData"), envir = nhm_env)
+ds18b20_hourly <- nhm_env$ds18b20
+ds18b20_hourly <- ds18b20_hourly[!is.na(ds18b20_hourly$value) & ds18b20_hourly$value < 80, ]
+sensor_hour_range <- range(ds18b20_hourly$hour_dt)
+
+# Hour with the greatest difference between sensors ...7e6a and ...0f1c (default for slider)
+sensor_peak_hour <- local({
+  s1 <- ds18b20_hourly[ds18b20_hourly$sensor_id == "28-00000f9c7e6a", c("hour_dt", "value")]
+  s2 <- ds18b20_hourly[ds18b20_hourly$sensor_id == "28-00000f9d0f1c", c("hour_dt", "value")]
+  h  <- merge(s1, s2, by = "hour_dt", suffixes = c("_a", "_b"))
+  h$diff <- abs(h$value_a - h$value_b)
+  h$hour_dt[which.max(h$diff)]
+})
 
 # ── Load GeoJSON boundary data for outline map ──────────────────
 # GeoJSON files served as static assets — mapbox-gl loads them by URL
@@ -452,6 +515,94 @@ ui <- nhm_page(
             shiny::div(
               style = "height: clamp(360px, 62vh, 650px);",
               plotly::plotlyOutput("fly_map", height = "100%")
+            )
+          )
+        )
+      )
+    ),
+
+    # ── Page 5: Soil temperature map ─────────────────────────────
+    nhm_flipbook_page(
+      title = "Soil Temperatures",
+      shiny::fluidRow(
+        shiny::column(
+          3,
+          nhm_panel(
+            title = "Controls",
+            shiny::uiOutput("soil_time_control"),
+            shiny::hr(),
+            shiny::tags$p(class = "nhm-value-label", "SELECTED TIME (UTC)"),
+            shiny::tags$p(
+              style = paste0(
+                "font-size:1.1rem;font-weight:700;color:",
+                cols$cyan, ";margin:4px 0;"
+              ),
+              shiny::textOutput("soil_time_display", inline = TRUE)
+            )
+          ),
+          nhm_panel(
+            title = "Temperature Summary",
+            shiny::uiOutput("soil_temp_summary")
+          )
+        ),
+        shiny::column(
+          9,
+          nhm_panel(
+            title = "Soil Temperature by Sensor",
+            shiny::div(
+              style = "height: clamp(360px, 62vh, 650px);",
+              plotly::plotlyOutput("soil_map", height = "100%")
+            )
+          )
+        )
+      )
+    ),
+
+    # ── Page 6: Concrete Path Distances ───────────────────────────
+    nhm_flipbook_page(
+      title = "Classic urban heat island",
+      shiny::fluidRow(
+        shiny::column(
+          12,
+          nhm_panel(
+            title = "Classic urban heat island",
+            shiny::div(
+              style = "height: clamp(360px, 62vh, 650px);",
+              plotly::plotlyOutput("concrete_depth_plot", height = "100%")
+            )
+          )
+        )
+      )
+    ),
+
+    # ── Page 7: 30cm > 10cm example ───────────────────────────────
+    nhm_flipbook_page(
+      title = "Thermal damping",
+      shiny::fluidRow(
+        shiny::column(
+          12,
+          nhm_panel(
+            title = "Thermal damping",
+            shiny::div(
+              style = "height: clamp(360px, 62vh, 650px);",
+              plotly::plotlyOutput("cold_effect_plot", height = "100%")
+            )
+          )
+        )
+      )
+    ),
+
+    # ── Page 8: Accumulated degree days in 2025 ──────────────────
+    nhm_flipbook_page(
+      title = "Concrete heat accumulation",
+      shiny::fluidRow(
+        shiny::column(
+          12,
+          nhm_panel(
+            title = "Accumulated degree days (2025)",
+            shiny::div(
+              style = "height: clamp(360px, 62vh, 650px);",
+              plotly::plotlyOutput("concrete_add_plot", height = "100%")
             )
           )
         )
@@ -1158,7 +1309,7 @@ server <- function(input, output, session) {
       visible    = FALSE,
       showlegend = FALSE
     ) |>
-      # Trace 1: NHM sensors (hidden initially)
+      # Trace 1: Urban Research Station soil locations (hidden initially)
       add_map_trace(sensors,
                     text    = ~sensor_name,
                     colour  = cols$lime, size = 8, opacity = 0.9,
@@ -1260,6 +1411,521 @@ server <- function(input, output, session) {
     do_fly_to("Urban Research Station", lat = 51.4965, lon = -0.1764, zoom = 17,
               target_idx = 1L)
   })
+
+  # ── Page 5: Soil temperature map ──────────────────────────────
+
+  output$soil_time_control <- shiny::renderUI({
+    shiny::sliderInput(
+      inputId  = "soil_time",
+      label    = "Time",
+      min      = sensor_hour_range[1],
+      max      = sensor_hour_range[2],
+      value    = sensor_peak_hour,
+      step     = 3600,
+      animate  = shiny::animationOptions(interval = 200, loop = FALSE),
+      timezone = "+0000",
+      width    = "100%"
+    )
+  })
+
+  output$soil_time_display <- shiny::renderText({
+    shiny::req(input$soil_time)
+    format(input$soil_time, "%d %b %Y %H:00 UTC")
+  })
+
+  soil_hour_data <- shiny::reactive({
+    shiny::req(input$soil_time)
+    sel <- as.POSIXct(
+      round(as.numeric(input$soil_time) / 3600) * 3600,
+      origin = "1970-01-01", tz = "UTC"
+    )
+    df <- ds18b20_hourly[ds18b20_hourly$hour_dt == sel, ]
+    merge(df, sensors, by.x = "sensor_id", by.y = "sensor_name", all.x = TRUE)
+  })
+
+  output$soil_map <- plotly::renderPlotly({
+    df        <- soil_hour_data()
+    df        <- df[!is.na(df$lat) & !is.na(df$lon) & !is.na(df$value), ]
+    temp_range <- quantile(ds18b20_hourly$value, probs = c(0.02, 0.98), na.rm = TRUE)
+
+    base_map <- function(p) {
+      nhm_plotly_layout(p,
+        palette = palette,
+        mapbox  = list(
+          style  = dark_style,
+          zoom   = soil_map_zoom,
+          center = soil_map_center
+        ),
+        margin = list(l = 0, r = 0, t = 0, b = 0)
+      ) |>
+        plotly::layout(autosize = TRUE) |>
+        plotly::config(displayModeBar = FALSE, responsive = TRUE)
+    }
+
+    if (nrow(df) == 0) {
+      return(base_map(plotly::plot_ly(type = "scattermapbox", mode = "markers")))
+    }
+
+    base_map(
+      plotly::plot_ly() |>
+        # Trace 1: colour-coded markers
+        plotly::add_trace(
+          inherit    = FALSE,
+          data       = df,
+          type       = "scattermapbox",
+          mode       = "markers",
+          lat        = ~lat,
+          lon        = ~lon,
+          marker     = list(
+            size       = 26,
+            color      = ~value,
+            colorscale = list(
+              c(0, "#2166AC"), c(0.25, "#67A9CF"), c(0.5, "#FDDBC7"),
+              c(0.75, "#EF8A62"), c(1, "#B2182B")
+            ),
+            cmin     = temp_range[1],
+            cmax     = temp_range[2],
+            colorbar = list(
+              title     = "\u00b0C",
+              titlefont = list(color = cols$text),
+              tickfont  = list(color = cols$text)
+            )
+          ),
+          hovertext  = ~paste0(sensor_id, "<br>", round(value, 1), "\u00b0C"),
+          hoverinfo  = "text",
+          showlegend = FALSE
+        ) |>
+        # Trace 2: temperature labels (text-only, rendered above markers)
+        plotly::add_trace(
+          inherit      = FALSE,
+          data         = df,
+          type         = "scattermapbox",
+          mode         = "text",
+          lat          = ~lat,
+          lon          = ~lon,
+          text         = ~paste0(round(value, 1), "\u00b0C"),
+          textposition = "middle center",
+          textfont     = list(color = "#000000", size = 11,
+                              family = "sans-serif"),
+          hoverinfo    = "none",
+          showlegend   = FALSE
+        )
+    )
+  })
+
+  output$soil_temp_summary <- shiny::renderUI({
+    df <- soil_hour_data()
+    df <- df[!is.na(df$value), ]
+
+    if (nrow(df) == 0) {
+      return(shiny::tags$p(
+        style = paste0("color:", cols$muted, ";"),
+        "No sensor data for selected time."
+      ))
+    }
+
+    avg <- round(mean(df$value, na.rm = TRUE), 1)
+    mn  <- round(min(df$value,  na.rm = TRUE), 1)
+    mx  <- round(max(df$value,  na.rm = TRUE), 1)
+    n   <- nrow(df)
+
+    shiny::tagList(
+      shiny::tags$div(
+        style = "margin-bottom:10px;",
+        shiny::tags$p(class = "nhm-value-label", "MEAN TEMP"),
+        shiny::tags$p(
+          style = paste0("font-size:1.5rem;font-weight:700;color:", cols$cyan, ";margin:2px 0;"),
+          paste0(avg, "\u00b0C")
+        )
+      ),
+      shiny::tags$div(
+        style = "margin-bottom:10px;",
+        shiny::tags$p(class = "nhm-value-label", "MIN TEMP"),
+        shiny::tags$p(
+          style = paste0("font-size:1.5rem;font-weight:700;color:", cols$blue, ";margin:2px 0;"),
+          paste0(mn, "\u00b0C")
+        )
+      ),
+      shiny::tags$div(
+        style = "margin-bottom:10px;",
+        shiny::tags$p(class = "nhm-value-label", "MAX TEMP"),
+        shiny::tags$p(
+          style = paste0("font-size:1.5rem;font-weight:700;color:", cols$pink, ";margin:2px 0;"),
+          paste0(mx, "\u00b0C")
+        )
+      ),
+      shiny::tags$div(
+        shiny::tags$p(class = "nhm-value-label", "ACTIVE SENSORS"),
+        shiny::tags$p(
+          style = paste0("font-size:1.5rem;font-weight:700;color:", cols$lime, ";margin:2px 0;"),
+          n
+        )
+      )
+    )
+  })
+  # ── Page 6: Concrete Path Distances ─────────────────────────────────────────
+
+  # Pre-compute: find the day with the greatest 10cm vs 30cm temperature range
+  concrete_peak <- local({
+    id_10 <- concrete_path[["10cm from path"]]
+    id_20 <- concrete_path[["20cm from path"]]
+    id_30 <- concrete_path[["30cm from path"]]
+
+    df_10 <- ds18b20_hourly[ds18b20_hourly$sensor_id == id_10, c("hour_dt", "value")]
+    df_20 <- ds18b20_hourly[ds18b20_hourly$sensor_id == id_20, c("hour_dt", "value")]
+    df_30 <- ds18b20_hourly[ds18b20_hourly$sensor_id == id_30, c("hour_dt", "value")]
+
+    # Inner-join so we only keep hours where all three sensors have readings
+    hourly <- merge(df_10, df_20, by = "hour_dt", suffixes = c("_10", "_20"))
+    hourly <- merge(hourly, df_30, by = "hour_dt")
+    names(hourly)[names(hourly) == "value"] <- "value_30"
+    hourly <- hourly[order(hourly$hour_dt), ]
+
+    hourly$valid <- hourly$value_10 > hourly$value_20 & hourly$value_20 > hourly$value_30
+    hourly$diff  <- hourly$value_10 - hourly$value_30
+
+    # For each candidate hour, check that every point in its ±24 h window is valid
+    ts <- as.numeric(hourly$hour_dt)
+    window_ok <- vapply(seq_len(nrow(hourly)), function(i) {
+      in_win <- abs(ts - ts[i]) <= 24 * 3600
+      all(hourly$valid[in_win])
+    }, logical(1))
+
+    candidates <- hourly[window_ok, ]
+    peak_hour <- candidates$hour_dt[which.max(candidates$diff)]
+    max_diff  <- round(max(candidates$diff, na.rm = TRUE), 1)
+
+    # 48 hours centred on the peak hour
+    window_start <- peak_hour - 24 * 3600
+    window_end   <- peak_hour + 24 * 3600
+
+    all_ids <- unlist(concrete_path, use.names = FALSE)
+    df_win  <- ds18b20_hourly[
+      ds18b20_hourly$sensor_id %in% all_ids &
+        ds18b20_hourly$hour_dt >= window_start &
+        ds18b20_hourly$hour_dt <= window_end,
+    ]
+
+    dist_map <- data.frame(
+      sensor_id = unlist(concrete_path, use.names = FALSE),
+      depth     = names(concrete_path),
+      stringsAsFactors = FALSE
+    )
+    df_win <- merge(df_win, dist_map, by = "sensor_id")
+    df_win$depth <- factor(df_win$depth, levels = names(concrete_path))
+
+    list(data = df_win, peak_hour = peak_hour, max_diff = max_diff,
+         window_start = window_start, window_end = window_end)
+  })
+
+  output$concrete_peak_day_info <- shiny::renderUI({
+    ph <- concrete_peak$peak_hour
+    md <- concrete_peak$max_diff
+
+    shiny::tagList(
+      shiny::tags$div(
+        style = "margin-bottom:10px;",
+        shiny::tags$p(class = "nhm-value-label", "PEAK HOUR (UTC)"),
+        shiny::tags$p(
+          style = paste0("font-size:1.2rem;font-weight:700;color:", cols$cyan, ";margin:2px 0;"),
+          format(ph, "%d %b %Y %H:00")
+        )
+      ),
+      shiny::tags$div(
+        shiny::tags$p(class = "nhm-value-label", "MAX DIFF (10\u00a0cm \u2212 30\u00a0cm)"),
+        shiny::tags$p(
+          style = paste0("font-size:1.5rem;font-weight:700;color:", cols$pink, ";margin:2px 0;"),
+          paste0(md, "\u00b0C")
+        )
+      )
+    )
+  })
+
+  output$concrete_depth_plot <- plotly::renderPlotly({
+    df         <- concrete_peak$data
+    peak_hour  <- concrete_peak$peak_hour
+    win_start  <- concrete_peak$window_start
+    win_end    <- concrete_peak$window_end
+
+    depth_colours <- c(
+      "10cm from path" = cols$pink,
+      "20cm from path" = cols$cyan,
+      "30cm from path" = cols$lime
+    )
+
+    p <- plotly::plot_ly()
+    for (dep in levels(df$depth)) {
+      sub <- df[df$depth == dep, ]
+      sub <- sub[order(sub$hour_dt), ]
+      p <- plotly::add_trace(p,
+        data       = sub,
+        x          = ~hour_dt,
+        y          = ~value,
+        name       = dep,
+        type       = "scatter",
+        mode       = "lines+markers",
+        line       = list(color = depth_colours[[dep]], width = 2),
+        marker     = list(color = depth_colours[[dep]], size = 6),
+        hovertemplate = paste0("%{x|%d %b %H:00}<br>%{y:.1f}\u00b0C<extra>", dep, "</extra>")
+      )
+    }
+
+    x_range <- paste0(
+      format(win_start, "%d %b"), "\u2013", format(win_end, "%d %b %Y"), " (UTC)"
+    )
+
+    nhm_plotly_layout(p,
+      palette = palette,
+      xaxis = list(
+        title = list(text = paste0("Date and hour (UTC): ", x_range), standoff = 10),
+        automargin = TRUE,
+        tickformat = "%d %b\n%H:00"
+      ),
+      yaxis  = list(
+        title = list(text = "Sensor temperature (\u00b0C)", standoff = 10),
+        automargin = TRUE
+      ),
+      legend = list(orientation = "h", y = -0.2),
+      shapes = list(list(
+        type    = "line",
+        x0      = peak_hour, x1 = peak_hour,
+        y0      = 0, y1 = 1, yref = "paper",
+        line    = list(color = cols$muted, width = 1, dash = "dot")
+      ))
+    ) |>
+      plotly::layout(
+        xaxis = list(title = "Date and hour (UTC)"),
+        yaxis = list(title = "Sensor temperature (\u00b0C)")
+      ) |>
+      plotly::config(displayModeBar = FALSE, responsive = TRUE)
+  })
+
+  # ── Page 7: 30cm > 10cm cold effect ──────────────────────────────────────
+
+  cold_peak <- local({
+    id_10 <- concrete_path[["10cm from path"]]
+    id_20 <- concrete_path[["20cm from path"]]
+    id_30 <- concrete_path[["30cm from path"]]
+
+    df_10 <- ds18b20_hourly[ds18b20_hourly$sensor_id == id_10, c("hour_dt", "value")]
+    df_30 <- ds18b20_hourly[ds18b20_hourly$sensor_id == id_30, c("hour_dt", "value")]
+
+    h <- merge(df_10, df_30, by = "hour_dt", suffixes = c("_10", "_30"))
+    h <- h[h$value_30 > h$value_10, ]
+    h$diff <- h$value_30 - h$value_10
+
+    peak_hour  <- h$hour_dt[which.max(h$diff)]
+    max_diff   <- round(max(h$diff, na.rm = TRUE), 1)
+
+    window_start <- peak_hour - 24 * 3600
+    window_end   <- peak_hour + 24 * 3600
+
+    all_ids <- unlist(concrete_path, use.names = FALSE)
+    df_win  <- ds18b20_hourly[
+      ds18b20_hourly$sensor_id %in% all_ids &
+        ds18b20_hourly$hour_dt >= window_start &
+        ds18b20_hourly$hour_dt <= window_end,
+    ]
+
+    dist_map <- data.frame(
+      sensor_id = unlist(concrete_path, use.names = FALSE),
+      depth     = names(concrete_path),
+      stringsAsFactors = FALSE
+    )
+    df_win <- merge(df_win, dist_map, by = "sensor_id")
+    df_win$depth <- factor(df_win$depth, levels = names(concrete_path))
+
+    list(data = df_win, peak_hour = peak_hour, max_diff = max_diff,
+         window_start = window_start, window_end = window_end)
+  })
+
+  output$cold_peak_info <- shiny::renderUI({
+    ph <- cold_peak$peak_hour
+    md <- cold_peak$max_diff
+
+    shiny::tagList(
+      shiny::tags$div(
+        style = "margin-bottom:10px;",
+        shiny::tags$p(class = "nhm-value-label", "PEAK HOUR (UTC)"),
+        shiny::tags$p(
+          style = paste0("font-size:1.2rem;font-weight:700;color:", cols$cyan, ";margin:2px 0;"),
+          format(ph, "%d %b %Y %H:00")
+        )
+      ),
+      shiny::tags$div(
+        shiny::tags$p(class = "nhm-value-label", "MAX DIFF (30\u00a0cm \u2212 10\u00a0cm)"),
+        shiny::tags$p(
+          style = paste0("font-size:1.5rem;font-weight:700;color:", cols$lime, ";margin:2px 0;"),
+          paste0(md, "\u00b0C")
+        )
+      )
+    )
+  })
+
+  output$cold_effect_plot <- plotly::renderPlotly({
+    df        <- cold_peak$data
+    peak_hour <- cold_peak$peak_hour
+    win_start <- cold_peak$window_start
+    win_end   <- cold_peak$window_end
+
+    depth_colours <- c(
+      "10cm from path" = cols$pink,
+      "20cm from path" = cols$cyan,
+      "30cm from path" = cols$lime
+    )
+
+    p <- plotly::plot_ly()
+    for (dep in levels(df$depth)) {
+      sub <- df[df$depth == dep, ]
+      sub <- sub[order(sub$hour_dt), ]
+      p <- plotly::add_trace(p,
+        data       = sub,
+        x          = ~hour_dt,
+        y          = ~value,
+        name       = dep,
+        type       = "scatter",
+        mode       = "lines+markers",
+        line       = list(color = depth_colours[[dep]], width = 2),
+        marker     = list(color = depth_colours[[dep]], size = 6),
+        hovertemplate = paste0("%{x|%d %b %H:00}<br>%{y:.1f}\u00b0C<extra>", dep, "</extra>")
+      )
+    }
+
+    x_range <- paste0(
+      format(win_start, "%d %b"), "\u2013", format(win_end, "%d %b %Y"), " (UTC)"
+    )
+
+    nhm_plotly_layout(p,
+      palette = palette,
+      xaxis = list(
+        title = list(text = paste0("Date and hour (UTC): ", x_range), standoff = 10),
+        automargin = TRUE,
+        tickformat = "%d %b\n%H:00"
+      ),
+      yaxis  = list(
+        title = list(text = "Sensor temperature (\u00b0C)", standoff = 10),
+        automargin = TRUE
+      ),
+      legend = list(orientation = "h", y = -0.2),
+      shapes = list(list(
+        type = "line",
+        x0   = peak_hour, x1 = peak_hour,
+        y0   = 0, y1 = 1, yref = "paper",
+        line = list(color = cols$muted, width = 1, dash = "dot")
+      ))
+    ) |>
+      # Apply explicit axis titles after theme helper so defaults cannot override.
+      plotly::layout(
+        xaxis = list(title = "Date and hour (UTC)"),
+        yaxis = list(title = "Sensor temperature (\u00b0C)")
+      ) |>
+      plotly::config(displayModeBar = FALSE, responsive = TRUE)
+  })
+
+  # ── Page 8: Accumulated degree days in 2025 ─────────────────────────────
+
+  output$concrete_add_plot <- plotly::renderPlotly({
+    page8_sensors <- c(
+      "DC Courtyard" = "28-00000f9d0f1c",
+      "Chalk grassland hill" = "28-00000f9d74ea",
+      "Woodland" = "28-00000f9c7e6a"
+    )
+    all_ids <- unlist(page8_sensors, use.names = FALSE)
+    df_2025 <- ds18b20_hourly[
+      ds18b20_hourly$sensor_id %in% all_ids &
+        format(ds18b20_hourly$hour_dt, "%Y") == "2025",
+      c("sensor_id", "hour_dt", "value")
+    ]
+
+    shiny::validate(
+      shiny::need(nrow(df_2025) > 0, "No concrete sensor data available for 2025.")
+    )
+
+    dist_map <- data.frame(
+      sensor_id = unlist(page8_sensors, use.names = FALSE),
+      series    = names(page8_sensors),
+      stringsAsFactors = FALSE
+    )
+    df_2025 <- merge(df_2025, dist_map, by = "sensor_id")
+    df_2025$series <- factor(df_2025$series, levels = names(page8_sensors))
+
+    # Fill missing hours by linear interpolation so cumulative curves are continuous.
+    hourly_interp <- do.call(
+      rbind,
+      lapply(split(df_2025, df_2025$series), function(sub) {
+        sub <- sub[order(sub$hour_dt), c("sensor_id", "series", "hour_dt", "value")]
+        sub <- sub[!duplicated(sub$hour_dt), ]
+
+        full_hours <- seq(min(sub$hour_dt), max(sub$hour_dt), by = "hour")
+
+        if (nrow(sub) < 2) {
+          interp_vals <- rep(sub$value[1], length(full_hours))
+        } else {
+          interp_vals <- stats::approx(
+            x = as.numeric(sub$hour_dt),
+            y = sub$value,
+            xout = as.numeric(full_hours),
+            method = "linear",
+            rule = 2
+          )$y
+        }
+
+        data.frame(
+          sensor_id = sub$sensor_id[1],
+          series = sub$series[1],
+          hour_dt = full_hours,
+          value = interp_vals,
+          stringsAsFactors = FALSE
+        )
+      })
+    )
+
+    hourly_interp$date <- as.Date(hourly_interp$hour_dt, tz = "UTC")
+
+    # Degree-day contribution from hourly values (base 0°C): temp_hour / 24
+    hourly_interp$deg_day <- pmax(hourly_interp$value, 0) / 24
+
+    daily <- aggregate(deg_day ~ date + series, data = hourly_interp, FUN = sum, na.rm = TRUE)
+    daily <- daily[order(daily$series, daily$date), ]
+
+    daily$add_2025 <- ave(daily$deg_day, daily$series, FUN = cumsum)
+
+    depth_colours <- c(
+      "Chalk grassland hill" = cols$blue,
+      "DC Courtyard" = "#FF8C42",
+      "Woodland" = cols$lime
+    )
+
+    p <- plotly::plot_ly()
+    for (dep in levels(daily$series)) {
+      sub <- daily[daily$series == dep, ]
+      sub <- sub[order(sub$date), ]
+      p <- plotly::add_trace(p,
+        data = sub,
+        x = ~date,
+        y = ~add_2025,
+        name = dep,
+        type = "scatter",
+        mode = "lines",
+        line = list(color = depth_colours[[dep]], width = 3),
+        hovertemplate = paste0(
+          "%{x|%d %b %Y}<br>Accumulated: %{y:.1f} °C·days<extra>", dep, "</extra>"
+        )
+      )
+    }
+
+    nhm_plotly_layout(p,
+      palette = palette,
+      xaxis = list(
+        title = "",
+        tickformat = "%b %d"
+      ),
+      yaxis = list(title = ""),
+      legend = list(orientation = "h", y = -0.2)
+    ) |>
+      plotly::config(displayModeBar = FALSE, responsive = TRUE)
+  })
+
 }
 
 shinyApp(ui, server)
