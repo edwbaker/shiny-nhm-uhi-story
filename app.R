@@ -11,6 +11,56 @@ demo_data_dir <- function() {
 
 # ── Load core city heat data ───────────────────────────────────
 heat <- readRDS(file.path("data", "heat_cities.rds"))
+pnas_table1 <- read.csv(
+  file.path("data", "pnas_2304663120_table1.csv")
+)
+
+parse_numeric_field <- function(x) {
+  x <- trimws(as.character(x))
+  out <- rep(NA_real_, length(x))
+  ok <- nzchar(x)
+  if (any(ok)) {
+    pieces <- strsplit(x[ok], "-", fixed = TRUE)
+    out[ok] <- vapply(pieces, function(p) {
+      vals <- suppressWarnings(as.numeric(p))
+      if (all(is.na(vals))) NA_real_ else mean(vals, na.rm = TRUE)
+    }, numeric(1))
+  }
+  out
+}
+
+# Anthony et al. (2023) PNAS formula (Materials & Methods):
+#   Proportion = mean(Σsoil(upper)/Σtotal(upper),
+#                     Σsoil(central)/Σtotal(central),
+#                     Σsoil(lower)/Σtotal(lower))
+# Excluding Phage (orders of magnitude larger, not representative).
+# Sub-groups of Arthropoda are excluded to avoid double-counting.
+# Where upper or lower is missing/NA, the central estimate is substituted.
+page9_total_pct <- local({
+  excl_groups <- c("Total", "Phage", "Insecta", "Arachnida",
+                   "Collembola", "Diplopoda", "Isoptera", "Formicidae")
+
+  get_col <- function(sec, col) {
+    rows <- pnas_table1[
+      pnas_table1$section == sec & !pnas_table1$group %in% excl_groups,
+    ]
+    central_vals <- parse_numeric_field(as.character(rows[["central"]]))
+    col_vals     <- parse_numeric_field(as.character(rows[[col]]))
+    # substitute central when the requested column is NA
+    ifelse(is.na(col_vals), central_vals, col_vals)
+  }
+
+  tier_ratio <- function(tier) {
+    soil  <- get_col("Species in soil", tier)
+    total <- get_col("Total species",   tier)
+    valid <- !is.na(soil) & !is.na(total) & total > 0
+    sum(soil[valid]) / sum(total[valid])
+  }
+
+  100 * mean(c(tier_ratio("upper"),
+               tier_ratio("central"),
+               tier_ratio("lower")))
+})
 
 format_scenario_label <- function(x) {
   out <- tools::toTitleCase(gsub("_", " ", x))
@@ -190,15 +240,17 @@ add_map_trace <- function(p, data, text, colour, size, opacity,
 
 # ── UI ──────────────────────────────────────────────────────────
 ui <- nhm_page(
-  title       = "World Cities Heat Projections",
-  subbrand    = "NATURAL HISTORY MUSEUM",
-  description = paste0(
-    "Projected hottest 90-day average daily maximum temperature across historical and emissions scenarios"
-  ),
+  title       = "Investigating Soil Temperature",
+  subbrand    = "NHM Living Labs",
   footer  = FALSE,
   palette = palette,
 
   nhm_map_zoom_js(),
+
+  # Keep soil-time slider labels compact so they do not overflow the left panel.
+  shiny::tags$style(shiny::HTML(
+    "#soil_time .irs-min, #soil_time .irs-max, #soil_time .irs-from, #soil_time .irs-to, #soil_time .irs-single {font-size: 10px;}"
+  )),
 
   nhm_flipbook(
     id = "demo",
@@ -592,17 +644,138 @@ ui <- nhm_page(
       )
     ),
 
-    # ── Page 8: Accumulated degree days in 2025 ──────────────────
+    # ── Page 8: Soil biodiversity shares ─────────────────────────
+    nhm_flipbook_page(
+      title = "Soil biodiversity shares",
+      shiny::fluidRow(
+        shiny::column(
+          12,
+          nhm_panel(
+            title = "Soil biodiversity by major group",
+            shiny::div(
+              style = "height: clamp(360px, 62vh, 650px);",
+              plotly::plotlyOutput("soil_biodiv_pies", height = "100%")
+            ),
+            shiny::tags$p(
+              style = paste0("margin-top:10px;font-size:1.05rem;color:", cols$muted, ";"),
+              "Source: Anthony MA, Bender SF, van der Heijden MGA (2023). ",
+              shiny::tags$em("Enumerating soil biodiversity"),
+              ". PNAS 120(33):e2304663120. DOI: ",
+              shiny::tags$a(
+                href = "https://doi.org/10.1073/pnas.2304663120",
+                target = "_blank",
+                rel = "noopener noreferrer",
+                "10.1073/pnas.2304663120"
+              )
+            )
+          )
+        )
+      )
+    ),
+
+    # ── Page 9: All-species in-soil summary ────────────────────────
+    nhm_flipbook_page(
+      title = "How much of all life lives in soil?",
+      shiny::fluidRow(
+        shiny::column(
+          12,
+          nhm_panel(
+            title = "Share of all species living in soil",
+            shiny::div(
+              style = "height: clamp(360px, 62vh, 650px);",
+              plotly::plotlyOutput("soil_total_donut", height = "100%")
+            ),
+            shiny::tags$p(
+              style = paste0("margin-top:10px;font-size:1.05rem;color:", cols$muted, ";"),
+              "Excluding phage. Source: Anthony MA, Bender SF, van der Heijden MGA (2023). ",
+              shiny::tags$em("Enumerating soil biodiversity"),
+              ". PNAS 120(33):e2304663120."
+            )
+          )
+        )
+      )
+    ),
+
+    # ── Page 10: Tree climate suitability ────────────────────────
+    nhm_flipbook_page(
+      title = "Future climate suitability of garden trees",
+      shiny::fluidRow(
+        shiny::column(
+          12,
+          nhm_panel(
+            shiny::div(
+              style = "height: clamp(420px, 70vh, 760px);display:flex;align-items:center;justify-content:center;",
+              shiny::tags$img(
+                src = "images/cards/future-climate-suitability.png",
+                alt = "Future climate suitability of NHM garden trees",
+                style = "max-height:100%;max-width:100%;width:auto;height:auto;display:block;object-fit:contain;"
+              )
+            )
+          )
+        )
+      )
+    ),
+
+    # ── Page 10: Accumulated degree days in 2025 ─────────────────
     nhm_flipbook_page(
       title = "Concrete heat accumulation",
       shiny::fluidRow(
         shiny::column(
-          12,
+          3,
+          nhm_panel(
+            title = "Controls",
+            shiny::sliderInput(
+              inputId = "add_base_temp",
+              label = "Base temperature (°C)",
+              min = 0,
+              max = 20,
+              value = 5,
+              step = 0.5,
+              sep = ""
+            ),
+            shiny::tags$p(
+              style = paste0("margin-top:0.75rem;color:", cols$muted, ";"),
+              "Hourly temperatures above this threshold are accumulated into degree days."
+            ),
+            shiny::checkboxInput(
+              inputId = "add_show_aphid_gens",
+              label = "Cabbage root fly generation markers",
+              value = FALSE
+            )
+          )
+        ),
+        shiny::column(
+          9,
           nhm_panel(
             title = "Accumulated degree days (2025)",
             shiny::div(
               style = "height: clamp(360px, 62vh, 650px);",
               plotly::plotlyOutput("concrete_add_plot", height = "100%")
+            )
+          )
+        )
+      )
+    ),
+
+    # ── Page 11: Next steps ─────────────────────────────────────
+    nhm_flipbook_page(
+      title = "Next steps",
+      shiny::fluidRow(
+        shiny::column(
+          12,
+          nhm_panel(
+            title = "Next steps",
+            shiny::tags$div(
+              style = "padding: 1rem 0.25rem 0.25rem 0.25rem;",
+              shiny::tags$ol(
+                style = paste0(
+                  "margin: 0; padding-left: 1.4rem; font-size: 1.8rem; ",
+                  "line-height: 1.7; color: ", cols$text, ";"
+                ),
+                shiny::tags$li("Evolution Garden"),
+                shiny::tags$li("Transition to three-site working"),
+                shiny::tags$li("Laboratory twins")
+              )
             )
           )
         )
@@ -790,7 +963,8 @@ server <- function(input, output, session) {
             yaxis = list(visible = FALSE),
             paper_bgcolor = "transparent",
             plot_bgcolor  = "transparent"
-          )
+          ) |>
+          plotly::config(displayModeBar = FALSE, responsive = TRUE)
       )
     }
 
@@ -933,7 +1107,8 @@ server <- function(input, output, session) {
             yaxis = list(visible = FALSE),
             paper_bgcolor = "transparent",
             plot_bgcolor = "transparent"
-          )
+          ) |>
+          plotly::config(displayModeBar = FALSE, responsive = TRUE)
       )
     }
 
@@ -955,7 +1130,8 @@ server <- function(input, output, session) {
             yaxis = list(visible = FALSE),
             paper_bgcolor = "transparent",
             plot_bgcolor = "transparent"
-          )
+          ) |>
+          plotly::config(displayModeBar = FALSE, responsive = TRUE)
       )
     }
 
@@ -1422,6 +1598,7 @@ server <- function(input, output, session) {
       max      = sensor_hour_range[2],
       value    = sensor_peak_hour,
       step     = 3600,
+      timeFormat = "%d %b %H:%M",
       animate  = shiny::animationOptions(interval = 200, loop = FALSE),
       timezone = "+0000",
       width    = "100%"
@@ -1824,7 +2001,27 @@ server <- function(input, output, session) {
 
   # ── Page 8: Accumulated degree days in 2025 ─────────────────────────────
 
+  shiny::observeEvent(input$add_show_aphid_gens, {
+    if (isTRUE(input$add_show_aphid_gens) && !isTRUE(all.equal(input$add_base_temp, 5))) {
+      shiny::updateSliderInput(session, "add_base_temp", value = 5)
+    }
+  }, ignoreInit = FALSE)
+
+  shiny::observeEvent(input$add_base_temp, {
+    if (isTRUE(input$add_show_aphid_gens) && !isTRUE(all.equal(input$add_base_temp, 5))) {
+      shiny::updateSliderInput(session, "add_base_temp", value = 5)
+    }
+  }, ignoreInit = TRUE)
+
   output$concrete_add_plot <- plotly::renderPlotly({
+    base_temp <- if (isTRUE(input$add_show_aphid_gens)) {
+      5
+    } else if (is.null(input$add_base_temp)) {
+      0
+    } else {
+      input$add_base_temp
+    }
+
     page8_sensors <- c(
       "DC Courtyard" = "28-00000f9d0f1c",
       "Chalk grassland hill" = "28-00000f9d74ea",
@@ -1882,13 +2079,37 @@ server <- function(input, output, session) {
 
     hourly_interp$date <- as.Date(hourly_interp$hour_dt, tz = "UTC")
 
-    # Degree-day contribution from hourly values (base 0°C): temp_hour / 24
-    hourly_interp$deg_day <- pmax(hourly_interp$value, 0) / 24
+    # Degree-day contribution from hourly values above the selected base temperature.
+    hourly_interp$deg_day <- pmax(hourly_interp$value - base_temp, 0) / 24
 
     daily <- aggregate(deg_day ~ date + series, data = hourly_interp, FUN = sum, na.rm = TRUE)
     daily <- daily[order(daily$series, daily$date), ]
 
     daily$add_2025 <- ave(daily$deg_day, daily$series, FUN = cumsum)
+
+    daily_lookup <- split(daily, daily$date)
+    daily$hover_text <- vapply(seq_len(nrow(daily)), function(i) {
+      row <- daily[i, ]
+      others <- daily_lookup[[as.character(row$date)]]
+      others <- others[others$series != row$series, , drop = FALSE]
+
+      parts <- paste0(
+        "<b>", row$series, "</b>",
+        "<br>Date: ", format(row$date, "%d %b %Y"),
+        "<br>Accumulated degree days above ", sprintf("%.1f", base_temp), "°C: ",
+        sprintf("%.1f", row$add_2025), " °C·days"
+      )
+
+      if (nrow(others) > 0) {
+        for (j in seq_len(nrow(others))) {
+          delta <- round(row$add_2025 - others$add_2025[[j]], 1)
+          delta_label <- paste0(ifelse(delta >= 0, "+", ""), delta, " °C·days")
+          parts <- paste0(parts, "<br>vs ", others$series[[j]], ": ", delta_label)
+        }
+      }
+
+      parts
+    }, character(1))
 
     depth_colours <- c(
       "Chalk grassland hill" = cols$blue,
@@ -1908,20 +2129,200 @@ server <- function(input, output, session) {
         type = "scatter",
         mode = "lines",
         line = list(color = depth_colours[[dep]], width = 3),
-        hovertemplate = paste0(
-          "%{x|%d %b %Y}<br>Accumulated: %{y:.1f} °C·days<extra>", dep, "</extra>"
-        )
+        hoverinfo = "text",
+        text = ~hover_text
       )
     }
 
     nhm_plotly_layout(p,
       palette = palette,
+      margin = list(r = 100),
       xaxis = list(
-        title = "",
-        tickformat = "%b %d"
+        title = NULL,
+        automargin = TRUE,
+        tickformat = "%b %d",
+        showticklabels = FALSE
       ),
-      yaxis = list(title = ""),
-      legend = list(orientation = "h", y = -0.2)
+      yaxis = list(
+        title = NULL,
+        automargin = TRUE,
+        showticklabels = FALSE
+      ),
+      legend = list(orientation = "v", x = 0.02, y = 0.98, xanchor = "left", yanchor = "top"),
+      shapes = if (isTRUE(input$add_show_aphid_gens)) {
+        max_add <- max(daily$add_2025, na.rm = TRUE)
+        gen_thresholds <- c()
+        current <- 210
+        while (current <= max_add) {
+          gen_thresholds <- c(gen_thresholds, current)
+          current <- current + 290
+        }
+        lapply(gen_thresholds, function(y_val) {
+          list(
+            type = "line",
+            x0 = 0, x1 = 1, xref = "paper",
+            y0 = y_val, y1 = y_val, yref = "y",
+            line = list(color = cols$pink, width = 1, dash = "dash"),
+            opacity = 0.6
+          )
+        })
+      } else {
+        list()
+      },
+      annotations = if (isTRUE(input$add_show_aphid_gens)) {
+        max_add <- max(daily$add_2025, na.rm = TRUE)
+        gen_thresholds <- c()
+        current <- 210
+        while (current <= max_add) {
+          gen_thresholds <- c(gen_thresholds, current)
+          current <- current + 290
+        }
+        lapply(seq_along(gen_thresholds), function(i) {
+          list(
+            x = 1.02,
+            y = gen_thresholds[[i]],
+            xref = "paper",
+            yref = "y",
+            text = paste0("Gen ", i),
+            showarrow = FALSE,
+            xanchor = "left",
+            yanchor = "middle",
+            font = list(color = cols$pink, size = 8)
+          )
+        })
+      } else {
+        list()
+      }
+    ) |>
+      plotly::layout(
+        xaxis = list(title = list(text = "")),
+        yaxis = list(title = list(text = "")),
+        legend = list(x = 1.05, y = 0.98, xanchor = "left", yanchor = "top")
+      ) |>
+      plotly::config(displayModeBar = FALSE, responsive = TRUE)
+  })
+
+  # ── Page 9: All-species in-soil summary donut ─────────────────────────────
+
+  output$soil_total_donut <- plotly::renderPlotly({
+    in_soil <- 59
+    other   <- 100 - in_soil
+    plotly::plot_ly(
+      labels  = c("In soil", "Other habitats"),
+      values  = c(in_soil, other),
+      type    = "pie",
+      hole    = 0.55,
+      marker  = list(
+        colors = c(cols$lime, cols$muted),
+        line   = list(color = "#ffffff", width = 2)
+      ),
+      textinfo      = "none",
+      hovertemplate = "%{label}: %{value}%<extra></extra>"
+    ) |>
+    plotly::layout(
+      annotations = list(list(
+        text     = "<b>59%</b><br>in soil",
+        x = 0.5, y = 0.5,
+        xref = "paper", yref = "paper",
+        showarrow = FALSE,
+        font = list(size = 22, color = "#ffffff")
+      )),
+      showlegend = FALSE,
+      paper_bgcolor = "rgba(0,0,0,0)",
+      plot_bgcolor  = "rgba(0,0,0,0)",
+      margin = list(t = 40, b = 40, l = 60, r = 60)
+    ) |>
+      plotly::config(displayModeBar = FALSE, responsive = TRUE)
+  })
+
+  # ── Page 10: Soil biodiversity pie charts ────────────────────────────────
+
+  output$soil_biodiv_pies <- plotly::renderPlotly({
+    major_groups <- c(
+      "Mammalia", "Nematoda", "Arthropoda", "Plantae",
+      "Bacteria", "Fungi", "Archaea", "Protists", "Phage"
+    )
+
+    total_df <- pnas_table1[
+      pnas_table1$section == "Total species" & pnas_table1$group %in% major_groups,
+      c("group", "central")
+    ]
+    soil_df <- pnas_table1[
+      pnas_table1$section == "Species in soil" & pnas_table1$group %in% major_groups,
+      c("group", "central")
+    ]
+    names(total_df)[2] <- "total_central"
+    names(soil_df)[2] <- "soil_central"
+
+    pie_df <- merge(total_df, soil_df, by = "group", all = FALSE)
+    pie_df$display_group <- ifelse(pie_df$group == "Phage", "Bacteriophage", pie_df$group)
+    pie_df$total_val <- parse_numeric_field(pie_df$total_central)
+    pie_df$soil_val <- parse_numeric_field(pie_df$soil_central)
+    pie_df$pct_soil <- 100 * pie_df$soil_val / pie_df$total_val
+    pie_df <- pie_df[is.finite(pie_df$pct_soil) & !is.na(pie_df$pct_soil), ]
+    pie_df <- pie_df[order(-pie_df$pct_soil, pie_df$display_group), ]
+
+    shiny::validate(
+      shiny::need(nrow(pie_df) > 0, "No biodiversity percentage data available.")
+    )
+
+    n <- nrow(pie_df)
+    grid_cols <- 3L
+    grid_rows <- ceiling(n / grid_cols)
+
+    p <- plotly::plot_ly()
+    annotations <- list()
+
+    for (i in seq_len(n)) {
+      r <- (i - 1L) %/% grid_cols
+      c <- (i - 1L) %% grid_cols
+
+      x0 <- c / grid_cols
+      x1 <- (c + 1L) / grid_cols
+      y1 <- 1 - (r / grid_rows)
+      y0 <- 1 - ((r + 1L) / grid_rows)
+
+      pct <- pie_df$pct_soil[i]
+      grp <- pie_df$display_group[i]
+
+      p <- plotly::add_trace(
+        p,
+        type = "pie",
+        name = grp,
+        labels = c("In soil", "Other habitats"),
+        values = c(pct, 100 - pct),
+        hole = 0.45,
+        sort = FALSE,
+        direction = "clockwise",
+        textinfo = "none",
+        marker = list(colors = c(cols$lime, cols$muted)),
+        showlegend = i == 1L,
+        domain = list(
+          x = c(x0 + 0.02, x1 - 0.02),
+          y = c(y0 + 0.08, y1 - 0.02)
+        ),
+        hovertemplate = paste0("%{label}: %{value:.1f}%<extra>", grp, "</extra>")
+      )
+
+      annotations[[length(annotations) + 1L]] <- list(
+        x = (x0 + x1) / 2,
+        y = y0 + 0.02,
+        xref = "paper",
+        yref = "paper",
+        showarrow = FALSE,
+        xanchor = "center",
+        yanchor = "bottom",
+        text = paste0(grp, "<br>", sprintf("%.1f", pct), "% in soil"),
+        font = list(color = "#F1F5F9", size = 11)
+      )
+    }
+
+    nhm_plotly_layout(
+      p,
+      palette = palette,
+      margin = list(t = 20, b = 40, l = 10, r = 10),
+      legend = list(orientation = "h", y = -0.1),
+      annotations = annotations
     ) |>
       plotly::config(displayModeBar = FALSE, responsive = TRUE)
   })
