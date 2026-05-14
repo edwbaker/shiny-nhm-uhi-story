@@ -2,15 +2,6 @@ stations <- read.csv("data/met_office_stations.csv", stringsAsFactors = FALSE)
 sensors  <- read.csv("data/nhm_sensors.csv", stringsAsFactors = FALSE)
 wmo      <- read.csv("data/wmo_stations.csv", stringsAsFactors = FALSE)
 
-haversine_km <- function(lat1, lon1, lat2, lon2) {
-  R <- 6371
-  dlat <- (lat2 - lat1) * pi / 180
-  dlon <- (lon2 - lon1) * pi / 180
-  a <- sin(dlat / 2)^2 +
-    cos(lat1 * pi / 180) * cos(lat2 * pi / 180) * sin(dlon / 2)^2
-  R * 2 * atan2(sqrt(a), sqrt(1 - a))
-}
-
 mean_nn_dist <- function(lat, lon, chunk_size = 500) {
   n <- length(lat)
   if (n < 2) return(NA_real_)

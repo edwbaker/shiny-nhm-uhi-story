@@ -29,39 +29,6 @@ parse_numeric_field <- function(x) {
   out
 }
 
-# Anthony et al. (2023) PNAS formula (Materials & Methods):
-#   Proportion = mean(Σsoil(upper)/Σtotal(upper),
-#                     Σsoil(central)/Σtotal(central),
-#                     Σsoil(lower)/Σtotal(lower))
-# Excluding Phage (orders of magnitude larger, not representative).
-# Sub-groups of Arthropoda are excluded to avoid double-counting.
-# Where upper or lower is missing/NA, the central estimate is substituted.
-page9_total_pct <- local({
-  excl_groups <- c("Total", "Phage", "Insecta", "Arachnida",
-                   "Collembola", "Diplopoda", "Isoptera", "Formicidae")
-
-  get_col <- function(sec, col) {
-    rows <- pnas_table1[
-      pnas_table1$section == sec & !pnas_table1$group %in% excl_groups,
-    ]
-    central_vals <- parse_numeric_field(as.character(rows[["central"]]))
-    col_vals     <- parse_numeric_field(as.character(rows[[col]]))
-    # substitute central when the requested column is NA
-    ifelse(is.na(col_vals), central_vals, col_vals)
-  }
-
-  tier_ratio <- function(tier) {
-    soil  <- get_col("Species in soil", tier)
-    total <- get_col("Total species",   tier)
-    valid <- !is.na(soil) & !is.na(total) & total > 0
-    sum(soil[valid]) / sum(total[valid])
-  }
-
-  100 * mean(c(tier_ratio("upper"),
-               tier_ratio("central"),
-               tier_ratio("lower")))
-})
-
 format_scenario_label <- function(x) {
   out <- tools::toTitleCase(gsub("_", " ", x))
 
@@ -1795,29 +1762,6 @@ server <- function(input, output, session) {
          window_start = window_start, window_end = window_end)
   })
 
-  output$concrete_peak_day_info <- shiny::renderUI({
-    ph <- concrete_peak$peak_hour
-    md <- concrete_peak$max_diff
-
-    shiny::tagList(
-      shiny::tags$div(
-        style = "margin-bottom:10px;",
-        shiny::tags$p(class = "nhm-value-label", "PEAK HOUR (UTC)"),
-        shiny::tags$p(
-          style = paste0("font-size:1.2rem;font-weight:700;color:", cols$cyan, ";margin:2px 0;"),
-          format(ph, "%d %b %Y %H:00")
-        )
-      ),
-      shiny::tags$div(
-        shiny::tags$p(class = "nhm-value-label", "MAX DIFF (10\u00a0cm \u2212 30\u00a0cm)"),
-        shiny::tags$p(
-          style = paste0("font-size:1.5rem;font-weight:700;color:", cols$pink, ";margin:2px 0;"),
-          paste0(md, "\u00b0C")
-        )
-      )
-    )
-  })
-
   output$concrete_depth_plot <- plotly::renderPlotly({
     df         <- concrete_peak$data
     peak_hour  <- concrete_peak$peak_hour
@@ -1881,7 +1825,6 @@ server <- function(input, output, session) {
 
   cold_peak <- local({
     id_10 <- concrete_path[["10cm from path"]]
-    id_20 <- concrete_path[["20cm from path"]]
     id_30 <- concrete_path[["30cm from path"]]
 
     df_10 <- ds18b20_hourly[ds18b20_hourly$sensor_id == id_10, c("hour_dt", "value")]
