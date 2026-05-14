@@ -143,6 +143,40 @@ ds18b20_hourly <- nhm_env$ds18b20
 ds18b20_hourly <- ds18b20_hourly[!is.na(ds18b20_hourly$value) & ds18b20_hourly$value < 80, ]
 sensor_hour_range <- range(ds18b20_hourly$hour_dt)
 
+# ── Tree climate suitability data (page 10 map) ───────────────────────────
+tree_climate <- read.csv(
+  file.path("data", "TreeClimateSuitabilityExport.csv"),
+  stringsAsFactors = FALSE
+)
+tree_climate$lat <- suppressWarnings(as.numeric(tree_climate$Lattitude))
+tree_climate$lon <- suppressWarnings(as.numeric(tree_climate$Longitude))
+tree_climate$suitability <- trimws(as.character(tree_climate$Climate_suitability))
+tree_climate$suitability[tree_climate$suitability == ""] <- "Not provided"
+tree_climate$suitability <- ifelse(
+  tree_climate$suitability == "Not provided",
+  "Not provided",
+  tools::toTitleCase(tolower(tree_climate$suitability))
+)
+tree_climate <- tree_climate[!is.na(tree_climate$lat) & !is.na(tree_climate$lon), ]
+tree_climate$suitability <- factor(
+  tree_climate$suitability,
+  levels = c("High", "Moderate", "Vulnerable", "Low", "Not provided")
+)
+tree_climate <- tree_climate[tree_climate$suitability != "Not provided", ]
+tree_climate$suitability <- droplevels(tree_climate$suitability)
+
+tree_map_center <- list(
+  lat = mean(range(tree_climate$lat, na.rm = TRUE)),
+  lon = mean(range(tree_climate$lon, na.rm = TRUE))
+)
+tree_map_zoom <- (function() {
+  lon_span <- diff(range(tree_climate$lon, na.rm = TRUE))
+  lat_span <- diff(range(tree_climate$lat, na.rm = TRUE))
+  lat_as_lon <- lat_span / cos(tree_map_center$lat * pi / 180)
+  max_span <- max(lon_span, lat_as_lon)
+  floor(log2(360 / max_span)) + 0.5
+})()
+
 # Hour with the greatest difference between sensors ...7e6a and ...0f1c (default for slider)
 sensor_peak_hour <- local({
   s1 <- ds18b20_hourly[ds18b20_hourly$sensor_id == "28-00000f9c7e6a", c("hour_dt", "value")]
@@ -670,13 +704,10 @@ ui <- nhm_page(
         shiny::column(
           12,
           nhm_panel(
+            title = "Future climate suitability of NHM garden trees",
             shiny::div(
-              style = "height: clamp(420px, 70vh, 760px);display:flex;align-items:center;justify-content:center;",
-              shiny::tags$img(
-                src = "images/cards/future-climate-suitability.png",
-                alt = "Future climate suitability of NHM garden trees",
-                style = "max-height:100%;max-width:100%;width:auto;height:auto;display:block;object-fit:contain;"
-              )
+              style = "height: clamp(360px, 62vh, 650px);",
+              plotly::plotlyOutput("tree_climate_map", height = "100%")
             )
           )
         )
@@ -2175,6 +2206,59 @@ server <- function(input, output, session) {
       plot_bgcolor  = "rgba(0,0,0,0)",
       margin = list(t = 40, b = 40, l = 60, r = 60)
     ) |>
+      plotly::config(displayModeBar = FALSE, responsive = TRUE)
+  })
+
+  # ── Page 10: Tree climate suitability map ────────────────────────────────
+
+  output$tree_climate_map <- plotly::renderPlotly({
+    shiny::validate(
+      shiny::need(nrow(tree_climate) > 0, "No tree climate suitability data available.")
+    )
+
+    category_cols <- c(
+      "High" = "#2E7D32",
+      "Moderate" = "#FFEB3B",
+      "Vulnerable" = "#FB8C00",
+      "Low" = "#C62828"
+    )
+
+    p <- plotly::plot_ly()
+    for (cat_name in names(category_cols)) {
+      sub <- tree_climate[tree_climate$suitability == cat_name, ]
+      if (nrow(sub) == 0) next
+
+      p <- plotly::add_trace(
+        p,
+        data = sub,
+        type = "scattermapbox",
+        mode = "markers",
+        name = cat_name,
+        lat = ~lat,
+        lon = ~lon,
+        marker = list(size = 9, color = category_cols[[cat_name]], opacity = 0.9),
+        text = ~paste0(
+          "<b>", TaxonName, "</b>",
+          "<br>Tag: ", TagInfo,
+          "<br>Suitability: ", suitability
+        ),
+        hoverinfo = "text",
+        showlegend = TRUE
+      )
+    }
+
+    nhm_plotly_layout(
+      p,
+      palette = palette,
+      mapbox = list(
+        style = dark_style,
+        zoom = tree_map_zoom,
+        center = tree_map_center
+      ),
+      legend = list(orientation = "h", x = 0, y = -0.08, xanchor = "left"),
+      margin = list(l = 0, r = 0, t = 0, b = 30)
+    ) |>
+      plotly::layout(autosize = TRUE) |>
       plotly::config(displayModeBar = FALSE, responsive = TRUE)
   })
 
