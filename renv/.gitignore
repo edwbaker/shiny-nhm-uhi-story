@@ -1,6 +1,7 @@
 library/
 local/
-cellar/
+cellar/*
+!cellar/shinynhm_0.2.0.tar.gz
 lock/
 python/
 sandbox/
